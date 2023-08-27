@@ -1,0 +1,17 @@
+name: Sabotage.plugin
+version: '${project.version}'
+main: bubbles.sabotage.plugin.Main
+api-version: '1.20'
+description: Sabotage
+commands:
+  sab:
+    description: Controls various sabotage gamemode functions.
+    usage: /sab [start/stop/bomb/kit/save/balance]
+    permission: sabotage.sab
+    permission-message: You cannot modify sabotage settings.
+  team:
+    description: Changes Team
+    usage: /team [color]
+  kit:
+    description: Changes Kit
+    usage: /kit [kitname]
