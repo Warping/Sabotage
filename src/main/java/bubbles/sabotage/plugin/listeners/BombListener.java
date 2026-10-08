@@ -28,6 +28,9 @@ public final class BombListener implements Listener {
 		if (e.getAction().equals(Action.RIGHT_CLICK_BLOCK)) {
 			if (e.getMaterial().equals(Material.BLAZE_POWDER)) {	
 				if (e.getClickedBlock().getLocation().equals(bomb.getArmLoc()) && !bomb.isArmed() && !bomb.isExploded()) {
+					if (!bomb.getPlugin().getGame().isActive()) {
+						return;
+					}
 					int dist = (int) (Math.floor(e.getPlayer().getLocation().distance(bomb.getArmLoc())) + 1);
 					if (dist >= 4) {
 						return;
