@@ -1,0 +1,28 @@
+# Kit: Long
+# Slot 0 of the hotbar is always the Blaze Powder defuse kit - do not set it here.
+name: longbow
+price: 0
+icon: BOW
+description:
+  - "A long-range loadout with a punching, infinite-ammo bow."
+  - "Backed by a knockback sword for close encounters."
+
+hotbar:
+  1:
+    material: STONE_SWORD
+    enchants:
+      KNOCKBACK: 2
+  2:
+    material: BOW
+    enchants:
+      INFINITY: 1
+      PUNCH: 2
+  8: ARROW
+
+armor:
+  boots: CHAINMAIL_BOOTS
+  leggings: IRON_LEGGINGS
+  chestplate: IRON_CHESTPLATE
+  helmet: CHAINMAIL_HELMET
+
+potionEffects: []

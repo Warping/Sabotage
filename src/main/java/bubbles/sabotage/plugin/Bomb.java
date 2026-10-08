@@ -16,6 +16,7 @@ import org.bukkit.scoreboard.Team;
 import bubbles.sabotage.plugin.counter.Counter;
 import bubbles.sabotage.plugin.groups.SabTeams;
 import bubbles.sabotage.plugin.listeners.BombListener;
+import bubbles.sabotage.plugin.util.Text;
 import net.md_5.bungee.api.ChatColor;
 
 import static bubbles.sabotage.plugin.Main.applog;
@@ -117,10 +118,10 @@ public class Bomb implements ConfigurationSerializable {
 									if (!getArmedBy().getEntries().contains(p.getName())) {
 										p.playSound(p.getLocation(), Sound.ENTITY_BLAZE_DEATH, 0.3F, 2F);
 									}
-									p.sendMessage(SabTeams.getDisplayName(team) + ChatColor.GOLD + " team's bomb explodes in " + teamTimer.get(team) + " seconds!");
+									p.sendMessage(Text.of(SabTeams.getDisplayName(team) + ChatColor.GOLD + " team's bomb explodes in " + teamTimer.get(team) + " seconds!"));
 								} else if (getOwner().getEntries().contains(p.getName())){
 									p.playSound(p.getLocation(), Sound.ENTITY_BLAZE_DEATH, 0.3F, 2F);
-									p.sendMessage(ChatColor.GOLD + "Your bomb explodes in " + teamTimer.get(team) + " seconds!");
+									p.sendMessage(Text.of(ChatColor.GOLD + "Your bomb explodes in " + teamTimer.get(team) + " seconds!"));
 								}
 							}
 						}
@@ -156,9 +157,9 @@ public class Bomb implements ConfigurationSerializable {
 		disarmLoc.getBlock().setType(Material.BLACK_WOOL);
 		world.playSound(disarmLoc, Sound.ENTITY_GENERIC_EXPLODE, 0.3F, 0.5F);
 		if (getOwner()==null) {
-			plugin.getServer().broadcastMessage(SabTeams.getDisplayName(armedBy) + " team has blown up a bomb!");
+			plugin.getServer().broadcast(Text.of(SabTeams.getDisplayName(armedBy) + " team has blown up a bomb!"));
 		} else {
-			plugin.getServer().broadcastMessage(SabTeams.getDisplayName(armedBy) + " team has blown up a " + SabTeams.getDisplayName(getOwner()) + " bomb!");
+			plugin.getServer().broadcast(Text.of(SabTeams.getDisplayName(armedBy) + " team has blown up a " + SabTeams.getDisplayName(getOwner()) + " bomb!"));
 		}
 		isExploded = true;
 	}
@@ -246,7 +247,7 @@ public class Bomb implements ConfigurationSerializable {
 		disarmLoc.getBlock().setType(Material.AIR);
 		armLoc.getBlock().setType(Material.OBSIDIAN);
 		isCooldown = true;
-		plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable () {
+		plugin.getServer().getScheduler().runTaskLater(plugin, new Runnable () {
 			@Override
 			public void run() {
 				isCooldown = false;
@@ -256,7 +257,7 @@ public class Bomb implements ConfigurationSerializable {
 	}
 	
 	private void armingCheck(Team team, double oldStatus, Player player) {
-		plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
+		plugin.getServer().getScheduler().runTaskLater(plugin, new Runnable() {
 			
 			@Override
 			public void run() {
@@ -280,14 +281,14 @@ public class Bomb implements ConfigurationSerializable {
 					for (Team other : teamStatus.keySet()) {
 						resetArmStatus(other);
 					}
-					player.sendMessage(ChatColor.RED + "Overloading Bomb!");
+					player.sendMessage(Text.of(ChatColor.RED + "Overloading Bomb!"));
 				}
 			}
 		}, 20L);
 	}
 	
 	private void disarmingCheck(double oldStatus, Player player) {
-		plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
+		plugin.getServer().getScheduler().runTaskLater(plugin, new Runnable() {
 			
 			@Override
 			public void run() {
@@ -348,18 +349,18 @@ public class Bomb implements ConfigurationSerializable {
 	}
 	
 	public void denyArm(Player p) {
-		p.sendMessage(ChatColor.RED + "You cannot arm your own team's bomb!");
+		p.sendMessage(Text.of(ChatColor.RED + "You cannot arm your own team's bomb!"));
 	}
 	
 	public void denyDisarm(Player p) {
 		if (owner==null) {
-			p.sendMessage(ChatColor.RED + "You cannot disarm a bomb you armed!");
+			p.sendMessage(Text.of(ChatColor.RED + "You cannot disarm a bomb you armed!"));
 		} else {
-			p.sendMessage(ChatColor.RED + "You cannot disarm " + owner.getColor() + owner.getName() + ChatColor.RED + " team's bomb!");
+			p.sendMessage(Text.of(ChatColor.RED + "You cannot disarm " + owner.getColor() + owner.getName() + ChatColor.RED + " team's bomb!"));
 		}
 	}
 	
 	public void explodedMsg(Player p) {
-		p.sendMessage(ChatColor.RED + "This bomb has already exploded!");
+		p.sendMessage(Text.of(ChatColor.RED + "This bomb has already exploded!"));
 	}
 }

@@ -15,6 +15,7 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
 import bubbles.sabotage.plugin.items.customitem.CustomItem;
+import bubbles.sabotage.plugin.util.Text;
 
 public class Steak extends CustomItem {
 
@@ -30,11 +31,11 @@ public class Steak extends CustomItem {
 		
 		// Change the item meta and item details below
 		
-		im.setDisplayName(ChatColor.GREEN + "Steak");
+		im.displayName(Text.of(ChatColor.GREEN + "Steak"));
 		
 		List<String> lore = new ArrayList<>();
 		lore.add("Heals 4 hearts!");
-		im.setLore(lore);
+		im.lore(Text.of(lore));
 		
 		
 		// End of changes
@@ -45,7 +46,7 @@ public class Steak extends CustomItem {
 	}
 	
 	private void heal(Player p) {
-		PotionEffect effect = new PotionEffect(PotionEffectType.HEAL, 1, 1, false, false);
+		PotionEffect effect = new PotionEffect(PotionEffectType.INSTANT_HEALTH, 1, 1, false, false);
 		p.addPotionEffect(effect);
 	}
 	

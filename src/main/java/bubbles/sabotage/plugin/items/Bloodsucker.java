@@ -1,6 +1,7 @@
 package bubbles.sabotage.plugin.items;
 
 import bubbles.sabotage.plugin.items.customitem.CustomItem;
+import bubbles.sabotage.plugin.util.Text;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
@@ -28,13 +29,13 @@ public class Bloodsucker extends CustomItem {
         ItemMeta im = item.getItemMeta();
 
         // Change the item meta and item details below
-        im.addEnchant(Enchantment.DAMAGE_ALL, 1, true);
-        im.setDisplayName(ChatColor.LIGHT_PURPLE + "Blood Infused Sword");
+        im.addEnchant(Enchantment.SHARPNESS, 1, true);
+        im.displayName(Text.of(ChatColor.LIGHT_PURPLE + "Blood Infused Sword"));
 
         List<String> lore = new ArrayList<>();
         lore.add(ChatColor.GOLD + "Killing a player adds 2 hearts to your maximum health!");
         lore.add(ChatColor.GOLD + "The amount of redstone in your inventory is how many hearts you have!");
-        im.setLore(lore);
+        im.lore(Text.of(lore));
 
 
         // End of changes

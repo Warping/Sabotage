@@ -20,6 +20,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
 import bubbles.sabotage.plugin.items.customitem.CustomItem;
+import bubbles.sabotage.plugin.util.Text;
 import org.bukkit.material.MaterialData;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
@@ -43,11 +44,11 @@ public class Flare extends CustomItem {
 
         // Change the item meta and item details below
 
-        im.setDisplayName(ChatColor.AQUA + "Flare");
+        im.displayName(Text.of(ChatColor.AQUA + "Flare"));
 
         List<String> lore = new ArrayList<>();
         lore.add(ChatColor.GOLD + "Throw Flare with right click to spawn supply crate!");
-        im.setLore(lore);
+        im.lore(Text.of(lore));
 
 
         // End of changes
@@ -72,7 +73,7 @@ public class Flare extends CustomItem {
                 player.getWorld().spawnParticle(Particle.FLAME, flare.getLocation().clone().add(0,0.4,0), 5, 0, 0, 0, 0);
             }
         };
-        getPlugin().getServer().getScheduler().scheduleSyncDelayedTask(getPlugin(), () -> {
+        getPlugin().getServer().getScheduler().runTaskLater(getPlugin(), () -> {
             particleTrial.cancel();
             if (!flares.contains(flare)) return;
             Location flareLocation = flare.getLocation();

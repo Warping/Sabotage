@@ -13,10 +13,9 @@ import org.bukkit.inventory.meta.ItemMeta;
 
 import bubbles.sabotage.plugin.GUI;
 import bubbles.sabotage.plugin.items.customitem.CustomItem;
+import bubbles.sabotage.plugin.util.Text;
 
 public class KitSelect extends CustomItem implements Listener {
-	
-	GUI gui = this.getGame().getKits().getKitGUI();
 	
 	public KitSelect() {
 		super();
@@ -28,7 +27,7 @@ public class KitSelect extends CustomItem implements Listener {
 		
 		// Change the item meta and item details below
 		
-		im.setDisplayName(ChatColor.GREEN + "Kit Selector");
+		im.displayName(Text.of(ChatColor.GREEN + "Kit Selector"));
 		
 		// End of changes
 		
@@ -39,22 +38,23 @@ public class KitSelect extends CustomItem implements Listener {
 	
 	@Override
 	protected void onRightClickAir(PlayerInteractEvent e, boolean mainHand) {
-		gui.open(e.getPlayer());
+		getGUI().open(e.getPlayer());
 	}
 	
 	@Override
 	protected void onRightClickBlock(PlayerInteractEvent e, boolean mainHand) {
-		gui.open(e.getPlayer());
+		getGUI().open(e.getPlayer());
 	}
 	
 	@Override
 	protected void onRightClickPlayer(PlayerInteractAtEntityEvent e, boolean mainHand) {
-		gui.open(e.getPlayer());
+		getGUI().open(e.getPlayer());
 	}
 	
 	@EventHandler
 	public void onInventoryClick(InventoryClickEvent e) {
 		if (e.getCurrentItem()!=null) {
+			GUI gui = getGUI();
 			if (e.getInventory().equals(gui.getInv())) {
 				e.setCancelled(true);
 				gui.execute((Player)e.getWhoClicked(), e.getCurrentItem());
@@ -63,8 +63,11 @@ public class KitSelect extends CustomItem implements Listener {
 		}
 	}
 
+	// Always resolved fresh rather than cached: Game.setKits() swaps in a new SabKits (and
+	// therefore a new backing GUI) once kits finish loading, which happens after custom items
+	// are constructed, so a field captured at construction time would be stale.
 	public GUI getGUI() {
-		return gui;
+		return getGame().getKits().getKitGUI();
 	}
 
 }

@@ -32,6 +32,7 @@ public class Game implements ConfigurationSerializable {
 	private World world; //World where game takes place
 	private HashMap<Player, String> playerKits = new HashMap<Player, String>(); //Players and their selected kit
 	private HashMap<Player, Boolean> playerStatus = new HashMap<Player, Boolean>();
+	private HashMap<Player, Counter> deathCounters = new HashMap<Player, Counter>(); //Pending respawn timers, so stop() can cancel them
 	private ArrayList<Bomb> bombs = new ArrayList<Bomb>(); //Bombs in game
 	private ArrayList<String> teamNames = new ArrayList<String>(); //Team names
 	private SabTeams teams = new SabTeams(); //Teams available
@@ -82,7 +83,6 @@ public class Game implements ConfigurationSerializable {
 		world.setGameRule(GameRule.DO_MOB_LOOT, false);
 		world.setGameRule(GameRule.DO_MOB_SPAWNING, false);
 		world.setGameRule(GameRule.DO_FIRE_TICK, false);
-		world.setGameRule(GameRule.DO_IMMEDIATE_RESPAWN, true);
 		world.setGameRule(GameRule.DO_TILE_DROPS, false);
 		world.setDifficulty(Difficulty.HARD);
 		applog.log(LOG_LEVEL,"Establishing Listener...");
@@ -131,6 +131,10 @@ public class Game implements ConfigurationSerializable {
 	public void stop() {
 		active = false;
 		playerKits = new HashMap<Player, String>();
+		for (Counter counter : deathCounters.values()) {
+			counter.cancel();
+		}
+		deathCounters.clear();
 		for (Player p : plugin.getServer().getOnlinePlayers()) {
 			spectator(p);
 			showPlayer(p);
@@ -169,22 +173,49 @@ public class Game implements ConfigurationSerializable {
 	}
 	
 	public void respawn(Player player) {
+		applog.log(LOG_LEVEL, "[DEBUG] respawn: " + player.getName() + " (active=" + active + ") invulnerable="
+				+ player.isInvulnerable());
 		player.setAllowFlight(false);
 		if (active) {
 			if (playerKits.get(player)==null) {
 				setSelectedKit(player, kits.getKits().get(0).getName());	
 			}
 			Kit.load(player, kits.getKit(playerKits.get(player)));
+			applog.log(LOG_LEVEL, "[DEBUG] respawn: " + player.getName() + " after Kit.load invulnerable="
+					+ player.isInvulnerable());
 			if (teams.getSpawnLoc(player)!=null) {
 				player.teleport(teams.getSpawnLoc(player));
+				applog.log(LOG_LEVEL, "[DEBUG] respawn: " + player.getName() + " after teleport invulnerable="
+						+ player.isInvulnerable());
 			}
 			setPlayerStatus(player, true);
 		}
 		showPlayer(player);
+		applog.log(LOG_LEVEL, "[DEBUG] respawn: " + player.getName() + " after showPlayer invulnerable="
+				+ player.isInvulnerable());
 		player.setInvulnerable(false);
+		applog.log(LOG_LEVEL, "[DEBUG] respawn: " + player.getName() + " immediately after setInvulnerable(false) invulnerable="
+				+ player.isInvulnerable());
+		applog.log(LOG_LEVEL, "[DEBUG] respawn complete: " + player.getName()
+				+ " playerStatus=" + getPlayerStatus(player) + " invulnerable=" + player.isInvulnerable());
+
+		// With doImmediateRespawn active, Minecraft's own native respawn can run moments after
+		// death, independent of (and racing against) our own deathCounter-delayed respawn().
+		// Observed in testing: the immediate setInvulnerable(false) call above sometimes fails
+		// to stick only on a respawn that follows an actual death (not on the very first
+		// activation respawn, which has no preceding death). Re-assert it a couple ticks later
+		// to win that race once any native post-death state has settled.
+		Bukkit.getScheduler().runTaskLater(plugin, () -> {
+			if (player.isOnline()) {
+				player.setInvulnerable(false);
+				applog.log(LOG_LEVEL, "[DEBUG] respawn: " + player.getName() + " delayed re-assert invulnerable="
+						+ player.isInvulnerable());
+			}
+		}, 2L);
 	}
 	
 	public void spectator(Player player) {
+		applog.log(LOG_LEVEL, "[DEBUG] spectator: " + player.getName() + " entering spectator mode (active=" + active + ")");
 		clear(player);
 		giveMenuItems(player);
 		setPlayerStatus(player, false);
@@ -193,10 +224,16 @@ public class Game implements ConfigurationSerializable {
 		if (active) {
 			hidePlayer(player);
 		}
+		applog.log(LOG_LEVEL, "[DEBUG] spectator complete: " + player.getName()
+				+ " playerStatus=" + getPlayerStatus(player) + " invulnerable=" + player.isInvulnerable());
 	}
 	
 	public void deathCounter(Player player, int seconds) {
-		new Counter(20L) {
+		Counter existing = deathCounters.remove(player);
+		if (existing != null) {
+			existing.cancel();
+		}
+		Counter counter = new Counter(20L) {
 			
 			int currentTime = seconds;
 			
@@ -205,6 +242,7 @@ public class Game implements ConfigurationSerializable {
 				if (currentTime > 0 && active) {
 					player.setLevel(currentTime);
 				} else {
+					deathCounters.remove(player);
 					respawn(player);
 					cancel();
 				}
@@ -212,6 +250,7 @@ public class Game implements ConfigurationSerializable {
 				
 			}
 		};
+		deathCounters.put(player, counter);
 	}
 	
 	public void teamBalance() {
@@ -263,13 +302,21 @@ public class Game implements ConfigurationSerializable {
 	}
 	
 	public void hidePlayer(Player p) {
+		applog.log(LOG_LEVEL, "[DEBUG] hidePlayer: hiding " + p.getName() + " from all online players");
 		for (Player player : plugin.getServer().getOnlinePlayers()) {
+			if (player.equals(p)) {
+				continue;
+			}
 			player.hidePlayer(plugin, p);
 		}
 	}
 	
 	public void showPlayer(Player p) {
+		applog.log(LOG_LEVEL, "[DEBUG] showPlayer: showing " + p.getName() + " to all online players");
 		for (Player player : plugin.getServer().getOnlinePlayers()) {
+			if (player.equals(p)) {
+				continue;
+			}
 			player.showPlayer(plugin, p);
 		}
 	}
@@ -295,6 +342,14 @@ public class Game implements ConfigurationSerializable {
 	public void addBomb(Bomb bomb) {
 		bomb.setTeams(teams);
 		bombs.add(bomb);
+	}
+
+	public boolean removeBomb(int index) {
+		if (index < 0 || index >= bombs.size()) {
+			return false;
+		}
+		bombs.remove(index);
+		return true;
 	}
 
 	public Main getPlugin() {
@@ -383,7 +438,7 @@ public class Game implements ConfigurationSerializable {
 	}
 	
 	public boolean getPlayerStatus(Player player) {
-		return playerStatus.get(player);
+		return Boolean.TRUE.equals(playerStatus.get(player));
 	}
 	
 

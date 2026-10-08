@@ -98,30 +98,32 @@ public abstract class CustomItem implements Listener {
 		ItemStack eventItem = e.getItem().clone();
 		eventItem.setAmount(1);
 		if (eventItem.equals(customItem)) {
+			String who = e.getPlayer().getName();
+			String tag = "[DEBUG] " + getClass().getSimpleName() + " used by " + who + ": ";
 			switch (e.getAction()) {
 			case LEFT_CLICK_AIR:
-				applog.log(LOG_LEVEL,"Left Click Air!");
+				applog.log(LOG_LEVEL, tag + "Left Click Air!");
 				onLeftClickAir(e);
 				break;
 			case LEFT_CLICK_BLOCK:
-				applog.log(LOG_LEVEL,"Left Click Block!");
+				applog.log(LOG_LEVEL, tag + "Left Click Block!");
 				onLeftClickBlock(e);
 				break;
 			case RIGHT_CLICK_AIR:
 				if (e.getHand()==EquipmentSlot.HAND) {
-					applog.log(LOG_LEVEL,"Right Click Air! MainHand");
+					applog.log(LOG_LEVEL, tag + "Right Click Air! MainHand");
 					onRightClickAir(e, true);
 				} else if (e.getHand()==EquipmentSlot.OFF_HAND) {
-					applog.log(LOG_LEVEL,"Right Click Air! OffHand");
+					applog.log(LOG_LEVEL, tag + "Right Click Air! OffHand");
 					onRightClickAir(e, false);
 				}
 				break;
 			case RIGHT_CLICK_BLOCK:
 				if (e.getHand()==EquipmentSlot.HAND) {
-					applog.log(LOG_LEVEL,"Right Click Block! MainHand");
+					applog.log(LOG_LEVEL, tag + "Right Click Block! MainHand");
 					onRightClickBlock(e, true);
 				} else if (e.getHand()==EquipmentSlot.OFF_HAND) {
-					applog.log(LOG_LEVEL,"Right Click Block! OffHand");
+					applog.log(LOG_LEVEL, tag + "Right Click Block! OffHand");
 					onRightClickBlock(e, false);
 				}
 				break;

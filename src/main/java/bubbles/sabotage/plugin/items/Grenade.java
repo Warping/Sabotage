@@ -3,6 +3,7 @@ package bubbles.sabotage.plugin.items;
 import bubbles.sabotage.plugin.counter.Counter;
 import bubbles.sabotage.plugin.groups.SabTeams;
 import bubbles.sabotage.plugin.items.customitem.CustomItem;
+import bubbles.sabotage.plugin.util.Text;
 import org.bukkit.*;
 import org.bukkit.entity.*;
 import org.bukkit.event.entity.PlayerDeathEvent;
@@ -35,14 +36,14 @@ public class Grenade extends CustomItem {
 
         // Change the item meta and item details below
 
-        im.setDisplayName(ChatColor.GREEN + "Grenade Lobber");
+        im.displayName(Text.of(ChatColor.GREEN + "Grenade Lobber"));
 
         List<String> lore = new ArrayList<>();
         lore.add(ChatColor.RED + "Highly explosive!");
         lore.add(ChatColor.GOLD + "Left Click to shoot. ");
         lore.add(ChatColor.GOLD + "Right Click to Perform a close shot");
         lore.add(ChatColor.GOLD + "Shift Right Click to reload");
-        im.setLore(lore);
+        im.lore(Text.of(lore));
 
 
         // End of changes
@@ -108,7 +109,7 @@ public class Grenade extends CustomItem {
         consumeAll(shooter, new ItemStack(AMMO_TYPE));
         shooter.getWorld().playSound(shooter, Sound.BLOCK_PISTON_EXTEND, 10F, 1.2F);
         reloading.put(shooter, true);
-        getPlugin().getServer().getScheduler().scheduleSyncDelayedTask(getPlugin(), () -> {
+        getPlugin().getServer().getScheduler().runTaskLater(getPlugin(), () -> {
             reloading.putIfAbsent(shooter, false);
             if (reloading.get(shooter)) {
                 reloading.put(shooter, false);
@@ -142,7 +143,7 @@ public class Grenade extends CustomItem {
                 shooter.getWorld().spawnParticle(Particle.FLAME, grenade.getLocation().clone().add(0,0.4,0), 5, 0, 0, 0, 0);
             }
         };
-        getPlugin().getServer().getScheduler().scheduleSyncDelayedTask(getPlugin(), () -> {
+        getPlugin().getServer().getScheduler().runTaskLater(getPlugin(), () -> {
             Location explosionLoc = grenade.getLocation();
             particleTrial.cancel();
             shooter.getWorld().createExplosion(explosionLoc, POWER, false, false);

@@ -20,6 +20,7 @@ public class Main extends JavaPlugin {
 	private Commands cmds;
 	private Scoreboard board;
 	private Game game;
+	private EditMode editMode = new EditMode();
 	private HashMap<String, CustomItem> items = new HashMap<String, CustomItem>();
 	private final Level LOG_LEVEL = Level.INFO;
 	public static Logger applog;
@@ -28,14 +29,13 @@ public class Main extends JavaPlugin {
 	public void onEnable() {
 		applog = getLogger().getParent();
 
-		ConfigurationSerialization.registerClass(SabKits.class, "SabKits");
-		ConfigurationSerialization.registerClass(Kit.class, "Kit");
 		ConfigurationSerialization.registerClass(Bomb.class, "Bomb");
 		ConfigurationSerialization.registerClass(Game.class, "Game");
 		board = getServer().getScoreboardManager().getNewScoreboard();
 		
 		load("Sab");
 		loadCustomItems();
+		loadKits("Sab");
 		game.setup();
 
 		cmds = new Commands(game);
@@ -55,7 +55,7 @@ public class Main extends JavaPlugin {
 		items.put("healing", new HealingWand());
 		items.put("grappler", new GrapplingHook());
 		items.put("trash", new Trash());
-		items.put("sniper", new Sniper());
+		items.put("rifle", new Rifle());
 		items.put("steak", new Steak());
 		items.put("kit", new KitSelect());
 		items.put("team", new TeamSelect());
@@ -91,6 +91,15 @@ public class Main extends JavaPlugin {
 			game = new Game(gameName, "world");
 		}
 		
+		// No teams yet (brand new game, or an existing save with none added) - default to
+		// red/blue/green/purple so the team GUI isn't empty out of the box.
+		if (game.getTeams().getTeams().isEmpty()) {
+			applog.log(LOG_LEVEL,"No teams found - creating default teams (red, blue, green, purple)...");
+			for (String color : new String[] {"red", "blue", "green", "purple"}) {
+				game.addTeam(color, game.getWorld().getSpawnLocation());
+			}
+		}
+		
 		if (ReadWrite.getSabBombs(gameName)!=null) {
 			applog.log(LOG_LEVEL,"Loading Bombs!");
 			ArrayList<Bomb> bombs = ReadWrite.getSabBombs(gameName);
@@ -107,6 +116,12 @@ public class Main extends JavaPlugin {
 			game.addBomb("red", 0, 3, 0, 0, 1, 0, 120);
 		}
 		
+		//game.setup();
+	}
+
+	// Kits reference custom items by key, so this must run after loadCustomItems() has
+	// registered them (see onEnable()).
+	private void loadKits(String gameName) {
 		if (ReadWrite.getSabKits(gameName)!=null) {
 			applog.log(LOG_LEVEL,"Loading Kits!");
 			SabKits kits = ReadWrite.getSabKits(gameName);
@@ -115,8 +130,6 @@ public class Main extends JavaPlugin {
 		} else {
 			applog.log(LOG_LEVEL,"Creating Kits!");
 		}
-		
-		//game.setup();
 	}
 
 	public Scoreboard getScoreboard() {
@@ -138,5 +151,9 @@ public class Main extends JavaPlugin {
 	}
 	public HashMap<String, CustomItem> getCustomItems() {
 		return items;
+	}
+
+	public EditMode getEditMode() {
+		return editMode;
 	}
 }

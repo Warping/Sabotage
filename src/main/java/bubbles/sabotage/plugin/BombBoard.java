@@ -1,5 +1,6 @@
 package bubbles.sabotage.plugin;
 
+import org.bukkit.scoreboard.Criteria;
 import org.bukkit.scoreboard.DisplaySlot;
 import org.bukkit.scoreboard.Objective;
 import org.bukkit.scoreboard.Score;
@@ -9,6 +10,7 @@ import org.bukkit.scoreboard.Team;
 import bubbles.sabotage.plugin.counter.Counter;
 import bubbles.sabotage.plugin.game.Game;
 import bubbles.sabotage.plugin.groups.SabTeams;
+import bubbles.sabotage.plugin.util.Text;
 import net.md_5.bungee.api.ChatColor;
 
 public class BombBoard {
@@ -27,14 +29,14 @@ public class BombBoard {
 	public static void setup(Game _game) {
 		game = _game;
 		board = plugin.getScoreboard();
-		objBomb = board.registerNewObjective("bombboard", "dummy", boardName);
+		objBomb = board.registerNewObjective("bombboard", Criteria.DUMMY, Text.of(boardName));
 		objBomb.setDisplaySlot(DisplaySlot.SIDEBAR);
 	}
 	
 	public static void display() {
 		lines = maxLines;
 		objBomb.unregister();
-		objBomb = board.registerNewObjective("bombboard", "dummy", boardName);
+		objBomb = board.registerNewObjective("bombboard", Criteria.DUMMY, Text.of(boardName));
 		objBomb.setDisplaySlot(DisplaySlot.SIDEBAR);
 		int bomb_index = 1;
 		String tag;

@@ -23,6 +23,7 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.util.Vector;
 
 import bubbles.sabotage.plugin.items.customitem.CustomItem;
+import bubbles.sabotage.plugin.util.Text;
 
 public class GrapplingHook extends CustomItem implements Listener {
 	
@@ -38,13 +39,13 @@ public class GrapplingHook extends CustomItem implements Listener {
 		
 		// Change the item meta and item details below
 		
-		im.setDisplayName(ChatColor.LIGHT_PURPLE + "Grappling Hook");
+		im.displayName(Text.of(ChatColor.LIGHT_PURPLE + "Grappling Hook"));
 		
 		List<String> lore = new ArrayList<>();
 		lore.add("Grapples objects and players!");
-		im.setLore(lore);
+		im.lore(Text.of(lore));
 		
-		im.addEnchant(Enchantment.ARROW_INFINITE, 1, false);
+		im.addEnchant(Enchantment.INFINITY, 1, false);
 		im.setUnbreakable(true);
 		
 		

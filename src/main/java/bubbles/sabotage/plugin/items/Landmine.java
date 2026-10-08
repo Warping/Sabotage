@@ -2,6 +2,7 @@ package bubbles.sabotage.plugin.items;
 
 import bubbles.sabotage.plugin.GUI;
 import bubbles.sabotage.plugin.items.customitem.CustomItem;
+import bubbles.sabotage.plugin.util.Text;
 import net.md_5.bungee.api.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -38,13 +39,13 @@ public class Landmine extends CustomItem {
 
         // Change the item meta and item details below
 
-        im.setDisplayName(ChatColor.RED + "Landmine Arming Tool");
+        im.displayName(Text.of(ChatColor.RED + "Landmine Arming Tool"));
 
         List<String> lore = new ArrayList<>();
         lore.add(org.bukkit.ChatColor.GOLD + "Right Click to Place Mine.");
         lore.add(org.bukkit.ChatColor.GOLD + "Sneak Right Click to Change Mine Appearance.");
         lore.add(org.bukkit.ChatColor.GOLD + "Left Click to Pick Up Mine.");
-        im.setLore(lore);
+        im.lore(Text.of(lore));
         item.setItemMeta(im);
         setItem(item);
 
@@ -131,13 +132,13 @@ public class Landmine extends CustomItem {
             attacker.sendMessage(ChatColor.GREEN + "Your landmine was triggered by " + victim.getName() + "!");
             attacker.getWorld().playSound(attacker, Sound.BLOCK_NOTE_BLOCK_PLING, 10.0F, 1F);
             landmineLocations.remove(loc);
-            getPlugin().getServer().getScheduler().scheduleSyncDelayedTask(getPlugin(), () -> {
+            getPlugin().getServer().getScheduler().runTaskLater(getPlugin(), () -> {
                 e.getClickedBlock().setType(Material.AIR);
                 victim.getWorld().playSound(loc, Sound.ENTITY_CREEPER_PRIMED, 10F, 1.2F);
             }, 1);
-            getPlugin().getServer().getScheduler().scheduleSyncDelayedTask(getPlugin(), () ->
+            getPlugin().getServer().getScheduler().runTaskLater(getPlugin(), () ->
                 attacker.getWorld().createExplosion(loc, POWER, false, false), FUSE_DELAY);
-            getPlugin().getServer().getScheduler().scheduleSyncDelayedTask(getPlugin(), () ->
+            getPlugin().getServer().getScheduler().runTaskLater(getPlugin(), () ->
                 give(attacker, new ItemStack(Material.HEAVY_WEIGHTED_PRESSURE_PLATE), 1), RELOAD_DELAY);
         }
 
@@ -179,19 +180,29 @@ public class Landmine extends CustomItem {
         removeLandmine(e.getPlayer(), e.getClickedBlock().getLocation());
     }
 
+    @EventHandler
     @Override
     protected void onDeath(PlayerDeathEvent e) {
         Player p = e.getPlayer();
+        System.out.println("[LANDMINE DEBUG] Player " + p.getName() + " died!");
+        System.out.println("[LANDMINE DEBUG] Total landmines on map: " + landmineLocations.size());
         Set<Location> toRemove = new HashSet<>();
         for (Location loc : landmineLocations.keySet()) {
-            if (landmineLocations.get(loc).equals(p)) {
+            Player owner = landmineLocations.get(loc);
+            System.out.println("[LANDMINE DEBUG] Checking mine at " + loc + " owned by " + owner.getName());
+            if (owner.equals(p)) {
+                System.out.println("[LANDMINE DEBUG] Found mine owned by " + p.getName() + " at " + loc);
                 loc.getBlock().setType(Material.AIR);
+                System.out.println("[LANDMINE DEBUG] Set block to AIR at " + loc);
                 toRemove.add(loc);
             }
         }
+        System.out.println("[LANDMINE DEBUG] Removing " + toRemove.size() + " mines from HashMap");
         for (Location loc : toRemove) {
             landmineLocations.remove(loc);
+            System.out.println("[LANDMINE DEBUG] Removed mine from HashMap at " + loc);
         }
+        System.out.println("[LANDMINE DEBUG] Landmines remaining: " + landmineLocations.size());
     }
 
     @Override

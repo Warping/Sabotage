@@ -1,18 +1,19 @@
 package bubbles.sabotage.plugin.counter;
 
 import bubbles.sabotage.plugin.Main;
+import org.bukkit.scheduler.BukkitTask;
 
 public class Counter implements Runnable {
 
-	private int taskId;
+	private BukkitTask task;
 	private Main plugin = Main.getPlugin(Main.class);
 
     public Counter(long length) {
-    	taskId = plugin.getServer().getScheduler().scheduleSyncRepeatingTask(plugin, this, 0L, length);
+    	task = plugin.getServer().getScheduler().runTaskTimer(plugin, this, 0L, length);
     }
 
     public void cancel() {
-        plugin.getServer().getScheduler().cancelTask(taskId);
+        task.cancel();
     }
 
 	@Override

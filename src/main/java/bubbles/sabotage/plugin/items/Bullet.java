@@ -11,6 +11,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
 import bubbles.sabotage.plugin.items.customitem.CustomItem;
+import bubbles.sabotage.plugin.util.Text;
 
 public class Bullet extends CustomItem {
 	
@@ -24,11 +25,11 @@ public class Bullet extends CustomItem {
 		
 		// Change the item meta and item details below
 		
-		im.setDisplayName(ChatColor.YELLOW + "Bullet");
+		im.displayName(Text.of(ChatColor.YELLOW + "Bullet"));
 		
 		List<String> lore = new ArrayList<>();
 		lore.add("Shoots at player instantly!");
-		im.setLore(lore);
+		im.lore(Text.of(lore));
 		
 		
 		// End of changes

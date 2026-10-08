@@ -2,6 +2,8 @@ package bubbles.sabotage.plugin.groups;
 
 import bubbles.sabotage.plugin.GUI;
 import bubbles.sabotage.plugin.Main;
+import bubbles.sabotage.plugin.util.Text;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.ChatColor;
 import org.bukkit.Color;
 import org.bukkit.Location;
@@ -54,7 +56,7 @@ public class SabTeams {
 		updateOptions(team);
 		ItemStack is = convertItem(teamName);
 		ItemMeta im = is.getItemMeta();
-		im.setDisplayName(getDisplayName(team) + team.getColor() + " Team");
+		im.displayName(Text.of(getDisplayName(team) + team.getColor() + " Team"));
 		is.setItemMeta(im);
 		teamGUI.addSlot(is, "/team " + teamName.toLowerCase());
 		spawnLoc.put(team, spawn);
@@ -64,19 +66,19 @@ public class SabTeams {
 	private void updateOptions(Team team) {
 		team.setCanSeeFriendlyInvisibles(true);
 		if (team.getName().toLowerCase().contains("red")) {
-			team.setColor(ChatColor.RED);
+			team.color(NamedTextColor.RED);
 		} else if (team.getName().toLowerCase().contains("blue")) {
-			team.setColor(ChatColor.BLUE);
+			team.color(NamedTextColor.BLUE);
 		} else if (team.getName().toLowerCase().contains("green")) {
-			team.setColor(ChatColor.DARK_GREEN);
+			team.color(NamedTextColor.DARK_GREEN);
 		} else if (team.getName().toLowerCase().contains("purple")) {
-			team.setColor(ChatColor.DARK_PURPLE);
+			team.color(NamedTextColor.DARK_PURPLE);
 		} else if (team.getName().toLowerCase().contains("pink")) {
-			team.setColor(ChatColor.LIGHT_PURPLE);
+			team.color(NamedTextColor.LIGHT_PURPLE);
 		} else if (team.getName().toLowerCase().contains("orange")) {
-			team.setColor(ChatColor.GOLD);
+			team.color(NamedTextColor.GOLD);
 		} else if (team.getName().toLowerCase().contains("aqua")) {
-			team.setColor(ChatColor.AQUA);
+			team.color(NamedTextColor.AQUA);
 		}
 		team.setAllowFriendlyFire(false);
 	}

@@ -18,6 +18,7 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
 import bubbles.sabotage.plugin.items.customitem.CustomItem;
+import bubbles.sabotage.plugin.util.Text;
 
 public class GlassShard extends CustomItem {
 	
@@ -34,12 +35,12 @@ public class GlassShard extends CustomItem {
 		
 		// Change the item meta and item details below
 		
-		im.setDisplayName(ChatColor.LIGHT_PURPLE + "Glass Shard");
+		im.displayName(Text.of(ChatColor.LIGHT_PURPLE + "Glass Shard"));
 		
 		List<String> lore = new ArrayList<>();
 		lore.add("Gives the user immense strength at the cost of healing!");
 		lore.add("Use this ability wisely!");
-		im.setLore(lore);
+		im.lore(Text.of(lore));
 		
 		
 		// End of changes
@@ -52,7 +53,7 @@ public class GlassShard extends CustomItem {
 	private void deactivate(Player player) {
 		activated.put(player, false);
 		for (PotionEffect potion : player.getActivePotionEffects()) {
-			if (potion.getType().equals(PotionEffectType.INCREASE_DAMAGE) || potion.getType().equals(PotionEffectType.NIGHT_VISION)) {
+			if (potion.getType().equals(PotionEffectType.STRENGTH) || potion.getType().equals(PotionEffectType.NIGHT_VISION)) {
 				player.removePotionEffect(potion.getType());
 			}
 		}
@@ -62,7 +63,7 @@ public class GlassShard extends CustomItem {
 		activated.put(player, true);
 		player.damage(2);
 		player.addPotionEffect(new PotionEffect(PotionEffectType.NIGHT_VISION, 99999, 1, false, false, true));
-		player.addPotionEffect(new PotionEffect(PotionEffectType.INCREASE_DAMAGE, 99999, 2, false, false, true));
+		player.addPotionEffect(new PotionEffect(PotionEffectType.STRENGTH, 99999, 2, false, false, true));
 	}
 	
 	private void click(Player player) {

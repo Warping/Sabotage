@@ -8,6 +8,7 @@ import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 
 import bubbles.sabotage.plugin.Bomb;
+import bubbles.sabotage.plugin.Kit;
 import bubbles.sabotage.plugin.PlayerData;
 import bubbles.sabotage.plugin.game.Game;
 import bubbles.sabotage.plugin.groups.SabKits;
@@ -24,14 +25,13 @@ public class ReadWrite {
 	}
 	
 	public static void saveSabKits(Game game) {
-		FileConfiguration config = new YamlConfiguration();
-		config.set("Sabotage Kits", game.getKits());
-		saveConfig(game, config, "kits");
+		for (Kit kit : game.getKits().getKits()) {
+			KitIO.saveKit(kit, game.getName());
+		}
 	}
 	
 	public static SabKits getSabKits(String game) {
-		FileConfiguration config = YamlConfiguration.loadConfiguration(new File("plugins/Sabotage/" + game + "/kits.yml"));
-		return (SabKits) config.get("Sabotage Kits");
+		return KitIO.loadKits(game);
 	}
 	
 	public static void saveSabBombs(Game game) {

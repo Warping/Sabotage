@@ -1,0 +1,64 @@
+# Kit: Test
+# A developer/QA kit exercising every supported feature of the kit file format:
+# every hotbar slot (1-8), a plain item, an enchanted+unbreakable item, multiple
+# different custom items, stacked items, enchanted armor, an offhand item, and
+# starting potion effects. Slot 0 of the hotbar is always the Blaze Powder defuse
+# kit - do not set it here.
+name: test
+price: 0
+icon: NETHER_STAR
+description:
+  - "Developer test kit exercising every hotbar slot, armor piece, and offhand."
+  - "Includes enchanted gear, multiple custom items, and starting potion effects."
+
+hotbar:
+  1:
+    material: DIAMOND_SWORD
+    enchants:
+      SHARPNESS: 5
+    unbreakable: true
+  2:
+    custom: healing
+  3:
+    custom: grappler
+  4:
+    material: BOW
+    enchants:
+      INFINITY: 1
+      POWER: 2
+  5:
+    material: ARROW
+    amount: 64
+  6:
+    custom: rewind
+  7:
+    material: GOLDEN_APPLE
+    amount: 3
+  8:
+    material: NETHER_STAR
+    amount: 1
+
+armor:
+  boots:
+    material: DIAMOND_BOOTS
+    enchants:
+      FEATHER_FALLING: 4
+  leggings: IRON_LEGGINGS
+  chestplate: NETHERITE_CHESTPLATE
+  helmet: TURTLE_HELMET
+
+offhand: SHIELD
+
+potionEffects:
+  - type: speed
+    amplifier: 1
+    duration: 1200
+    hideParticles: true
+  - type: regeneration
+    amplifier: 0
+    duration: 200
+    hideParticles: true
+  - type: night_vision
+    amplifier: 0
+    duration: 999999
+    hideParticles: true

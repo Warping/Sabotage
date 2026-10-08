@@ -1,0 +1,28 @@
+# Kit: Short
+# Slot 0 of the hotbar is always the Blaze Powder defuse kit - do not set it here.
+name: shortbow
+price: 3
+icon: BOW
+description:
+  - "A nimble melee-and-ranged loadout with a knockback sword."
+  - "Pairs an enchanted bow with light chainmail-and-iron armor."
+
+hotbar:
+  1:
+    material: STONE_SWORD
+    enchants:
+      KNOCKBACK: 2
+  2:
+    material: BOW
+    enchants:
+      INFINITY: 1
+      POWER: 2
+  8: ARROW
+
+armor:
+  boots: CHAINMAIL_BOOTS
+  leggings: IRON_LEGGINGS
+  chestplate: IRON_CHESTPLATE
+  helmet: CHAINMAIL_HELMET
+
+potionEffects: []

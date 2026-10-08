@@ -2,6 +2,7 @@ package bubbles.sabotage.plugin.items;
 
 import bubbles.sabotage.plugin.counter.Counter;
 import bubbles.sabotage.plugin.items.customitem.CustomItem;
+import bubbles.sabotage.plugin.util.Text;
 import org.bukkit.*;
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerInteractAtEntityEvent;
@@ -26,11 +27,11 @@ public class RewindClock extends CustomItem {
 
         // Change the item meta and item details below
 
-        im.setDisplayName(ChatColor.AQUA + "Rewind Clock");
+        im.displayName(Text.of(ChatColor.AQUA + "Rewind Clock"));
 
         List<String> lore = new ArrayList<>();
         lore.add(ChatColor.GOLD + "Goes back in time by Right Clicking");
-        im.setLore(lore);
+        im.lore(Text.of(lore));
 
         // End of changes
 
@@ -54,7 +55,7 @@ public class RewindClock extends CustomItem {
                     queue.add(p.getLocation());
                     recentPos.put(p,queue);
                     if (queue.size() == MAX_REWIND_TIME - 1) {
-                        getPlugin().getServer().getScheduler().scheduleSyncDelayedTask(getPlugin(), () -> {
+                        getPlugin().getServer().getScheduler().runTaskLater(getPlugin(), () -> {
                             p.sendMessage(ChatColor.GREEN + "You can now Rewind!");
                             p.getWorld().playSound(p, Sound.BLOCK_NOTE_BLOCK_HARP, 10, 2);
                         }, 20L);
@@ -71,11 +72,11 @@ public class RewindClock extends CustomItem {
             player.getWorld().playSound(player, Sound.BLOCK_NOTE_BLOCK_BASS, 10, 1);
             return;
         }
-        player.getWorld().spawnParticle(Particle.SPELL_INSTANT, player.getLocation(), 100, 0.1, 0.5, 0.1, 1);
+        player.getWorld().spawnParticle(Particle.CRIT, player.getLocation(), 100, 0.1, 0.5, 0.1, 1);
         player.getWorld().playSound(player,Sound.ENTITY_ENDERMAN_TELEPORT, 10, 1);
         player.teleport(recentPos.get(player).poll());
         player.getWorld().playSound(player,Sound.ENTITY_ENDERMAN_TELEPORT, 10, 1);
-        player.getWorld().spawnParticle(Particle.SPELL_INSTANT, player.getLocation(), 100, 0.1, 0.5, 0.1, 1);
+        player.getWorld().spawnParticle(Particle.CRIT, player.getLocation(), 100, 0.1, 0.5, 0.1, 1);
         recentPos.remove(player);
     }
 

@@ -13,6 +13,7 @@ import org.bukkit.inventory.meta.ItemMeta;
 
 import bubbles.sabotage.plugin.GUI;
 import bubbles.sabotage.plugin.items.customitem.CustomItem;
+import bubbles.sabotage.plugin.util.Text;
 
 public class TeamSelect extends CustomItem implements Listener {
 	
@@ -28,7 +29,7 @@ public class TeamSelect extends CustomItem implements Listener {
 		
 		// Change the item meta and item details below
 		
-		im.setDisplayName(ChatColor.GREEN + "Team Selector");
+		im.displayName(Text.of(ChatColor.GREEN + "Team Selector"));
 		
 		// End of changes
 		

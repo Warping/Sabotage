@@ -1,6 +1,7 @@
 package bubbles.sabotage.plugin;
 
 import bubbles.sabotage.plugin.items.customitem.CustomItem;
+import bubbles.sabotage.plugin.util.Text;
 import org.bukkit.Material;
 import org.bukkit.entity.HumanEntity;
 import org.bukkit.entity.Player;
@@ -47,7 +48,7 @@ public class GUI {
 	
 	private void createInv() {
 		int size = ((items.length / 9) + 1) * 9;
-		inv = plugin.getServer().createInventory(null, size, name);
+		inv = plugin.getServer().createInventory(null, size, Text.of(name));
 		inv.setContents(items);
 	}
 	
@@ -64,8 +65,10 @@ public class GUI {
 	public void removeSlot(ItemStack item) {
 		ArrayList<ItemStack> _items = new ArrayList<ItemStack>(Arrays.asList(items));
 		ArrayList<String> _cmds = new ArrayList<String>(Arrays.asList(cmds));
-		_cmds.remove(_items.indexOf(item));
-		_items.remove(item);
+		int index = _items.indexOf(item);
+		if (index == -1) return; //item already removed/not present, nothing to do
+		_cmds.remove(index);
+		_items.remove(index);
 		items = _items.toArray(new ItemStack[_items.size()]);
 		cmds = _cmds.toArray(new String[_cmds.size()]);
 		createInv();

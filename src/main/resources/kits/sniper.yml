@@ -1,0 +1,24 @@
+# Kit: Sniper
+# Slot 0 of the hotbar is always the Blaze Powder defuse kit - do not set it here.
+name: sniper
+price: 3
+icon: ARROW
+description:
+  - "A long-range specialist with a high-powered rifle."
+  - "Distance-based damage with a reload mechanic."
+
+hotbar:
+  1: STONE_SWORD
+  2:
+    custom: rifle
+  3:
+    material: ARROW
+    amount: 3
+
+armor:
+  boots: LEATHER_BOOTS
+  leggings: LEATHER_LEGGINGS
+  chestplate: LEATHER_CHESTPLATE
+  helmet: LEATHER_HELMET
+
+potionEffects: []
