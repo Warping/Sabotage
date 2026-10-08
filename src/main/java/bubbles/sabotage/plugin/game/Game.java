@@ -33,6 +33,7 @@ public class Game implements ConfigurationSerializable {
 	private HashMap<Player, String> playerKits = new HashMap<Player, String>(); //Players and their selected kit
 	private HashMap<Player, Boolean> playerStatus = new HashMap<Player, Boolean>();
 	private HashMap<Player, Counter> deathCounters = new HashMap<Player, Counter>(); //Pending respawn timers, so stop() can cancel them
+	private HashMap<Player, Location> deathLocations = new HashMap<Player, Location>(); //Store player death locations
 	private ArrayList<Bomb> bombs = new ArrayList<Bomb>(); //Bombs in game
 	private ArrayList<String> teamNames = new ArrayList<String>(); //Team names
 	private SabTeams teams = new SabTeams(); //Teams available
@@ -122,6 +123,7 @@ public class Game implements ConfigurationSerializable {
 		}
 		for (Player p : plugin.getServer().getOnlinePlayers()) {
 			respawn(p);
+			teleportToTeamSpawn(p);
 		}
 		BombBoard.update();
 		applog.log(LOG_LEVEL,ChatColor.GREEN + "Sabotage has started!");
@@ -183,11 +185,6 @@ public class Game implements ConfigurationSerializable {
 			Kit.load(player, kits.getKit(playerKits.get(player)));
 			applog.log(LOG_LEVEL, "[DEBUG] respawn: " + player.getName() + " after Kit.load invulnerable="
 					+ player.isInvulnerable());
-			if (teams.getSpawnLoc(player)!=null) {
-				player.teleport(teams.getSpawnLoc(player));
-				applog.log(LOG_LEVEL, "[DEBUG] respawn: " + player.getName() + " after teleport invulnerable="
-						+ player.isInvulnerable());
-			}
 			setPlayerStatus(player, true);
 		}
 		showPlayer(player);
@@ -213,6 +210,30 @@ public class Game implements ConfigurationSerializable {
 			}
 		}, 2L);
 	}
+
+	public void teleportToDeathLocation(Player player) {
+		Location deathLoc = deathLocations.remove(player);
+		if (deathLoc != null) {
+			player.teleport(deathLoc);
+			applog.log(LOG_LEVEL, "[DEBUG] teleportToDeathLocation: " + player.getName() + " teleported back to death location");
+		}
+	}
+
+	public Location getDeathLocation(Player player) {
+		return deathLocations.get(player);
+	}
+
+	private void teleportToTeamSpawn(Player player) {
+		if (teams.getSpawnLoc(player) != null) {
+			player.teleport(teams.getSpawnLoc(player));
+			applog.log(LOG_LEVEL, "[DEBUG] teleportToTeamSpawn: " + player.getName() + " teleported to team spawn");
+		}
+	}
+
+	public void recordDeathLocation(Player player) {
+		deathLocations.put(player, player.getLocation().clone());
+		applog.log(LOG_LEVEL, "[DEBUG] recordDeathLocation: " + player.getName() + " death location stored");
+	}
 	
 	public void spectator(Player player) {
 		applog.log(LOG_LEVEL, "[DEBUG] spectator: " + player.getName() + " entering spectator mode (active=" + active + ")");
@@ -220,7 +241,6 @@ public class Game implements ConfigurationSerializable {
 		giveMenuItems(player);
 		setPlayerStatus(player, false);
 		player.setInvulnerable(true);
-		player.setAllowFlight(true);
 		if (active) {
 			hidePlayer(player);
 		}
@@ -233,6 +253,13 @@ public class Game implements ConfigurationSerializable {
 		if (existing != null) {
 			existing.cancel();
 		}
+		Bukkit.getScheduler().runTaskLater(plugin, () -> {
+			if (player.isOnline()) {
+				player.setAllowFlight(true);
+				player.setFlying(true);
+				applog.log(LOG_LEVEL, "[DEBUG] deathCounter: " + player.getName() + " flight enabled");
+			}
+		}, 2L);
 		Counter counter = new Counter(20L) {
 			
 			int currentTime = seconds;
@@ -243,7 +270,9 @@ public class Game implements ConfigurationSerializable {
 					player.setLevel(currentTime);
 				} else {
 					deathCounters.remove(player);
+					deathLocations.remove(player);
 					respawn(player);
+					teleportToTeamSpawn(player);
 					cancel();
 				}
 				currentTime--;

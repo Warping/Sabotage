@@ -3,6 +3,7 @@ package bubbles.sabotage.plugin.listeners;
 import bubbles.sabotage.plugin.game.Game;
 import bubbles.sabotage.plugin.items.customitem.CustomItem;
 import org.bukkit.GameMode;
+import org.bukkit.Location;
 import org.bukkit.entity.Arrow;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
@@ -71,6 +72,7 @@ public class GameListener implements Listener {
 		Player player = e.getEntity();
 		applog.log(Level.INFO, "[DEBUG] onDeath: " + player.getName() + " died (active=" + game.isActive() + ")");
 		e.getDrops().clear();
+		game.recordDeathLocation(player);
 		// Deliberately NOT touching the player's health/inventory/flags here (that used to
 		// happen via game.spectator() at this point): the player is still showing the vanilla
 		// death screen at this moment (not yet "alive" again from the engine's perspective), and
@@ -90,6 +92,10 @@ public class GameListener implements Listener {
 		// the player active) always runs against a player the engine has already finished
 		// transitioning, instead of racing that transition on a fixed 8-second clock.
 		game.spectator(player);
+		Location deathLoc = game.getDeathLocation(player);
+		if (deathLoc != null) {
+			e.setRespawnLocation(deathLoc);
+		}
 		if (game.isActive()) {
 			game.deathCounter(player, 8);
 		}
