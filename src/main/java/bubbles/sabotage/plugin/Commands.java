@@ -23,6 +23,7 @@ public class Commands implements CommandExecutor {
 	private Game game;
 	private SabTeams teams;
 	private SabKits kits;
+	private static boolean debugMode = false;
 	
 	public Commands(Game game) {
 		this.game = game;
@@ -66,6 +67,11 @@ public class Commands implements CommandExecutor {
 				
 			case "edit":
 				game.getPlugin().getEditMode().toggle(p);
+				break;
+			
+			case "debug":
+				debugMode = !debugMode;
+				p.sendMessage(ChatColor.GOLD + "Debug mode " + (debugMode ? ChatColor.GREEN + "enabled!" : ChatColor.RED + "disabled!"));
 				break;
 				
 			case "item":
@@ -170,6 +176,7 @@ public class Commands implements CommandExecutor {
 		p.sendMessage(ChatColor.YELLOW + "/sab reload" + ChatColor.GRAY + " - Reloads all kits, teams, and bombs from .yml files");
 		p.sendMessage(ChatColor.YELLOW + "/sab balance" + ChatColor.GRAY + " - Toggles automatic team balancing");
 		p.sendMessage(ChatColor.YELLOW + "/sab edit" + ChatColor.GRAY + " - Toggles Creative map-editing mode (saves/restores your loadout)");
+		p.sendMessage(ChatColor.YELLOW + "/sab debug" + ChatColor.GRAY + " - Toggles debug output filtering");
 		p.sendMessage(ChatColor.YELLOW + "/sab item [player] [item] [count]" + ChatColor.GRAY + " - Gives a custom item to a player");
 		p.sendMessage(ChatColor.YELLOW + "/sab team" + ChatColor.GRAY + " - Manage teams (run for details)");
 		p.sendMessage(ChatColor.YELLOW + "/sab kit" + ChatColor.GRAY + " - Manage kits (run for details)");
@@ -409,6 +416,10 @@ public class Commands implements CommandExecutor {
 		
 		p.sendMessage(ChatColor.GREEN + "Reload complete!");
 		p.sendMessage(ChatColor.GRAY + "Kits: " + kits.getKits().size() + ", Teams: " + teams.getTeams().size() + ", Bombs: " + game.getBombs().size());
+	}
+
+	public static boolean isDebugMode() {
+		return debugMode;
 	}
 
 }

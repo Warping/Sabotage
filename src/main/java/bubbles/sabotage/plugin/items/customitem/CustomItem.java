@@ -1,6 +1,7 @@
 package bubbles.sabotage.plugin.items.customitem;
 
 
+import bubbles.sabotage.plugin.Commands;
 import bubbles.sabotage.plugin.Main;
 import bubbles.sabotage.plugin.game.Game;
 import org.bukkit.Material;
@@ -102,28 +103,28 @@ public abstract class CustomItem implements Listener {
 			String tag = "[DEBUG] " + getClass().getSimpleName() + " used by " + who + ": ";
 			switch (e.getAction()) {
 			case LEFT_CLICK_AIR:
-				applog.log(LOG_LEVEL, tag + "Left Click Air!");
+				if (Commands.isDebugMode()) applog.log(LOG_LEVEL, tag + "Left Click Air!");
 				onLeftClickAir(e);
 				break;
 			case LEFT_CLICK_BLOCK:
-				applog.log(LOG_LEVEL, tag + "Left Click Block!");
+				if (Commands.isDebugMode()) applog.log(LOG_LEVEL, tag + "Left Click Block!");
 				onLeftClickBlock(e);
 				break;
 			case RIGHT_CLICK_AIR:
 				if (e.getHand()==EquipmentSlot.HAND) {
-					applog.log(LOG_LEVEL, tag + "Right Click Air! MainHand");
+					if (Commands.isDebugMode()) applog.log(LOG_LEVEL, tag + "Right Click Air! MainHand");
 					onRightClickAir(e, true);
 				} else if (e.getHand()==EquipmentSlot.OFF_HAND) {
-					applog.log(LOG_LEVEL, tag + "Right Click Air! OffHand");
+					if (Commands.isDebugMode()) applog.log(LOG_LEVEL, tag + "Right Click Air! OffHand");
 					onRightClickAir(e, false);
 				}
 				break;
 			case RIGHT_CLICK_BLOCK:
 				if (e.getHand()==EquipmentSlot.HAND) {
-					applog.log(LOG_LEVEL, tag + "Right Click Block! MainHand");
+					if (Commands.isDebugMode()) applog.log(LOG_LEVEL, tag + "Right Click Block! MainHand");
 					onRightClickBlock(e, true);
 				} else if (e.getHand()==EquipmentSlot.OFF_HAND) {
-					applog.log(LOG_LEVEL, tag + "Right Click Block! OffHand");
+					if (Commands.isDebugMode()) applog.log(LOG_LEVEL, tag + "Right Click Block! OffHand");
 					onRightClickBlock(e, false);
 				}
 				break;
@@ -151,10 +152,10 @@ public abstract class CustomItem implements Listener {
 			eventItem1.setAmount(1);
 			eventItem2.setAmount(1);
 			if (eventItem1.equals(customItem)) {
-				applog.log(LOG_LEVEL,"Attacked! MainHand");
+				if (Commands.isDebugMode()) applog.log(LOG_LEVEL,"Attacked! MainHand");
 				onAttack(e, true);
 			} else if (eventItem2.equals(customItem)) {
-				applog.log(LOG_LEVEL,"Attacked! OffHand");
+				if (Commands.isDebugMode()) applog.log(LOG_LEVEL,"Attacked! OffHand");
 				onAttack(e, false);	
 			}
 		}
@@ -170,18 +171,18 @@ public abstract class CustomItem implements Listener {
 			eventItem2.setAmount(1);
 			if (eventItem1.equals(customItem)) {
 				if (e.getHitBlock()!=null) {
-					applog.log(LOG_LEVEL,"Hit Block! MainHand");
+					if (Commands.isDebugMode()) applog.log(LOG_LEVEL,"Hit Block! MainHand");
 					onShotBlock(e,true);
 				} else if (e.getHitEntity() instanceof Player) {
-					applog.log(LOG_LEVEL,"Hit Player! MainHand");
+					if (Commands.isDebugMode()) applog.log(LOG_LEVEL,"Hit Player! MainHand");
 					onShotPlayer(e,true);
 				}
 			} else if (eventItem2.equals(customItem)) {
 				if (e.getHitBlock()!=null) {
-					applog.log(LOG_LEVEL,"Hit Block! OffHand");
+					if (Commands.isDebugMode()) applog.log(LOG_LEVEL,"Hit Block! OffHand");
 					onShotBlock(e,false);
 				} else if (e.getHitEntity() instanceof Player) {
-					applog.log(LOG_LEVEL,"Hit Player! OffHand");
+					if (Commands.isDebugMode()) applog.log(LOG_LEVEL,"Hit Player! OffHand");
 					onShotPlayer(e,false);
 				}
 			}
@@ -197,10 +198,10 @@ public abstract class CustomItem implements Listener {
 			eventItem1.setAmount(1);
 			eventItem1.setAmount(1);
 			if (e.getHand()==EquipmentSlot.OFF_HAND && eventItem2.equals(customItem)) {
-				applog.log(LOG_LEVEL,"Right Click Player! OffHand");
+				if (Commands.isDebugMode()) applog.log(LOG_LEVEL,"Right Click Player! OffHand");
 				onRightClickPlayer(e,false);
 			} else if (e.getHand()==EquipmentSlot.HAND && eventItem1.equals(customItem)){
-				applog.log(LOG_LEVEL,"Right Click Player! MainHand");
+				if (Commands.isDebugMode()) applog.log(LOG_LEVEL,"Right Click Player! MainHand");
 				onRightClickPlayer(e,true);
 			}
 		}	
@@ -212,10 +213,10 @@ public abstract class CustomItem implements Listener {
 			ItemStack eventItem1 = ((Player) e.getEntity()).getInventory().getItemInMainHand().clone();
 			ItemStack eventItem2 = ((Player) e.getEntity()).getInventory().getItemInOffHand().clone();
 			if (eventItem1.equals(customItem) && e.getHand()==EquipmentSlot.HAND) {
-				applog.log(LOG_LEVEL,"Shot Bow! MainHand");
+				if (Commands.isDebugMode()) applog.log(LOG_LEVEL,"Shot Bow! MainHand");
 				onShoot(e,true);
 			} else if (eventItem2.equals(customItem) && e.getHand()==EquipmentSlot.OFF_HAND) {
-				applog.log(LOG_LEVEL,"Shot Bow! OffHand");
+				if (Commands.isDebugMode()) applog.log(LOG_LEVEL,"Shot Bow! OffHand");
 				onShoot(e,false);
 			}
 
@@ -230,11 +231,11 @@ public abstract class CustomItem implements Listener {
 			return;
 		}
 		if (attacker.getInventory().contains(customItem)) {
-			applog.log(LOG_LEVEL,"Kill Event! " + attacker.getName() + " killed " + victim.getName() + " with " + customItem.getType().name() + ".");
+			if (Commands.isDebugMode()) applog.log(LOG_LEVEL,"Kill Event! " + attacker.getName() + " killed " + victim.getName() + " with " + customItem.getType().name() + ".");
 			onKill(e, attacker, victim);
 		}
 		if (victim.getInventory().contains(customItem)) {
-			applog.log(LOG_LEVEL,"Death Event!");
+			if (Commands.isDebugMode()) applog.log(LOG_LEVEL,"Death Event!");
 			onDeath(e);
 		}
 	}

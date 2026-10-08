@@ -2,6 +2,7 @@ package bubbles.sabotage.plugin.game;
 
 import bubbles.sabotage.plugin.Bomb;
 import bubbles.sabotage.plugin.BombBoard;
+import bubbles.sabotage.plugin.Commands;
 import bubbles.sabotage.plugin.Kit;
 import bubbles.sabotage.plugin.Main;
 import bubbles.sabotage.plugin.counter.Counter;
@@ -175,7 +176,7 @@ public class Game implements ConfigurationSerializable {
 	}
 	
 	public void respawn(Player player) {
-		applog.log(LOG_LEVEL, "[DEBUG] respawn: " + player.getName() + " (active=" + active + ") invulnerable="
+		if (Commands.isDebugMode()) applog.log(LOG_LEVEL, "[DEBUG] respawn: " + player.getName() + " (active=" + active + ") invulnerable="
 				+ player.isInvulnerable());
 		player.setAllowFlight(false);
 		if (active) {
@@ -183,17 +184,17 @@ public class Game implements ConfigurationSerializable {
 				setSelectedKit(player, kits.getKits().get(0).getName());	
 			}
 			Kit.load(player, kits.getKit(playerKits.get(player)));
-			applog.log(LOG_LEVEL, "[DEBUG] respawn: " + player.getName() + " after Kit.load invulnerable="
+			if (Commands.isDebugMode()) applog.log(LOG_LEVEL, "[DEBUG] respawn: " + player.getName() + " after Kit.load invulnerable="
 					+ player.isInvulnerable());
 			setPlayerStatus(player, true);
 		}
 		showPlayer(player);
-		applog.log(LOG_LEVEL, "[DEBUG] respawn: " + player.getName() + " after showPlayer invulnerable="
+		if (Commands.isDebugMode()) applog.log(LOG_LEVEL, "[DEBUG] respawn: " + player.getName() + " after showPlayer invulnerable="
 				+ player.isInvulnerable());
 		player.setInvulnerable(false);
-		applog.log(LOG_LEVEL, "[DEBUG] respawn: " + player.getName() + " immediately after setInvulnerable(false) invulnerable="
+		if (Commands.isDebugMode()) applog.log(LOG_LEVEL, "[DEBUG] respawn: " + player.getName() + " immediately after setInvulnerable(false) invulnerable="
 				+ player.isInvulnerable());
-		applog.log(LOG_LEVEL, "[DEBUG] respawn complete: " + player.getName()
+		if (Commands.isDebugMode()) applog.log(LOG_LEVEL, "[DEBUG] respawn complete: " + player.getName()
 				+ " playerStatus=" + getPlayerStatus(player) + " invulnerable=" + player.isInvulnerable());
 
 		// With doImmediateRespawn active, Minecraft's own native respawn can run moments after
@@ -205,7 +206,7 @@ public class Game implements ConfigurationSerializable {
 		Bukkit.getScheduler().runTaskLater(plugin, () -> {
 			if (player.isOnline()) {
 				player.setInvulnerable(false);
-				applog.log(LOG_LEVEL, "[DEBUG] respawn: " + player.getName() + " delayed re-assert invulnerable="
+				if (Commands.isDebugMode()) applog.log(LOG_LEVEL, "[DEBUG] respawn: " + player.getName() + " delayed re-assert invulnerable="
 						+ player.isInvulnerable());
 			}
 		}, 2L);
@@ -215,7 +216,7 @@ public class Game implements ConfigurationSerializable {
 		Location deathLoc = deathLocations.remove(player);
 		if (deathLoc != null) {
 			player.teleport(deathLoc);
-			applog.log(LOG_LEVEL, "[DEBUG] teleportToDeathLocation: " + player.getName() + " teleported back to death location");
+			if (Commands.isDebugMode()) applog.log(LOG_LEVEL, "[DEBUG] teleportToDeathLocation: " + player.getName() + " teleported back to death location");
 		}
 	}
 
@@ -226,17 +227,17 @@ public class Game implements ConfigurationSerializable {
 	private void teleportToTeamSpawn(Player player) {
 		if (teams.getSpawnLoc(player) != null) {
 			player.teleport(teams.getSpawnLoc(player));
-			applog.log(LOG_LEVEL, "[DEBUG] teleportToTeamSpawn: " + player.getName() + " teleported to team spawn");
+			if (Commands.isDebugMode()) applog.log(LOG_LEVEL, "[DEBUG] teleportToTeamSpawn: " + player.getName() + " teleported to team spawn");
 		}
 	}
 
 	public void recordDeathLocation(Player player) {
 		deathLocations.put(player, player.getLocation().clone());
-		applog.log(LOG_LEVEL, "[DEBUG] recordDeathLocation: " + player.getName() + " death location stored");
+		if (Commands.isDebugMode()) applog.log(LOG_LEVEL, "[DEBUG] recordDeathLocation: " + player.getName() + " death location stored");
 	}
 	
 	public void spectator(Player player) {
-		applog.log(LOG_LEVEL, "[DEBUG] spectator: " + player.getName() + " entering spectator mode (active=" + active + ")");
+		if (Commands.isDebugMode()) applog.log(LOG_LEVEL, "[DEBUG] spectator: " + player.getName() + " entering spectator mode (active=" + active + ")");
 		clear(player);
 		giveMenuItems(player);
 		setPlayerStatus(player, false);
@@ -244,7 +245,7 @@ public class Game implements ConfigurationSerializable {
 		if (active) {
 			hidePlayer(player);
 		}
-		applog.log(LOG_LEVEL, "[DEBUG] spectator complete: " + player.getName()
+		if (Commands.isDebugMode()) applog.log(LOG_LEVEL, "[DEBUG] spectator complete: " + player.getName()
 				+ " playerStatus=" + getPlayerStatus(player) + " invulnerable=" + player.isInvulnerable());
 	}
 	
@@ -257,7 +258,7 @@ public class Game implements ConfigurationSerializable {
 			if (player.isOnline()) {
 				player.setAllowFlight(true);
 				player.setFlying(true);
-				applog.log(LOG_LEVEL, "[DEBUG] deathCounter: " + player.getName() + " flight enabled");
+				if (Commands.isDebugMode()) applog.log(LOG_LEVEL, "[DEBUG] deathCounter: " + player.getName() + " flight enabled");
 			}
 		}, 2L);
 		Counter counter = new Counter(20L) {
@@ -331,7 +332,7 @@ public class Game implements ConfigurationSerializable {
 	}
 	
 	public void hidePlayer(Player p) {
-		applog.log(LOG_LEVEL, "[DEBUG] hidePlayer: hiding " + p.getName() + " from all online players");
+		if (Commands.isDebugMode()) applog.log(LOG_LEVEL, "[DEBUG] hidePlayer: hiding " + p.getName() + " from all online players");
 		for (Player player : plugin.getServer().getOnlinePlayers()) {
 			if (player.equals(p)) {
 				continue;
@@ -341,7 +342,7 @@ public class Game implements ConfigurationSerializable {
 	}
 	
 	public void showPlayer(Player p) {
-		applog.log(LOG_LEVEL, "[DEBUG] showPlayer: showing " + p.getName() + " to all online players");
+		if (Commands.isDebugMode()) applog.log(LOG_LEVEL, "[DEBUG] showPlayer: showing " + p.getName() + " to all online players");
 		for (Player player : plugin.getServer().getOnlinePlayers()) {
 			if (player.equals(p)) {
 				continue;

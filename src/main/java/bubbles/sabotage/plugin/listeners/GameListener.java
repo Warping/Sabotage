@@ -1,5 +1,6 @@
 package bubbles.sabotage.plugin.listeners;
 
+import bubbles.sabotage.plugin.Commands;
 import bubbles.sabotage.plugin.game.Game;
 import bubbles.sabotage.plugin.items.customitem.CustomItem;
 import org.bukkit.GameMode;
@@ -58,10 +59,10 @@ public class GameListener implements Listener {
 				continue;
 			}
 			if (game.isActive() && !game.getPlayerStatus(other)) {
-				applog.log(Level.INFO, "[DEBUG] onJoin sync: hiding " + other.getName() + " from new joiner " + player.getName());
+				if (Commands.isDebugMode()) applog.log(Level.INFO, "[DEBUG] onJoin sync: hiding " + other.getName() + " from new joiner " + player.getName());
 				player.hidePlayer(game.getPlugin(), other);
 			} else {
-				applog.log(Level.INFO, "[DEBUG] onJoin sync: showing " + other.getName() + " to new joiner " + player.getName());
+				if (Commands.isDebugMode()) applog.log(Level.INFO, "[DEBUG] onJoin sync: showing " + other.getName() + " to new joiner " + player.getName());
 				player.showPlayer(game.getPlugin(), other);
 			}
 		}
@@ -70,7 +71,7 @@ public class GameListener implements Listener {
 	@EventHandler
 	public void onDeath(PlayerDeathEvent e) {
 		Player player = e.getEntity();
-		applog.log(Level.INFO, "[DEBUG] onDeath: " + player.getName() + " died (active=" + game.isActive() + ")");
+		if (Commands.isDebugMode()) applog.log(Level.INFO, "[DEBUG] onDeath: " + player.getName() + " died (active=" + game.isActive() + ")");
 		e.getDrops().clear();
 		game.recordDeathLocation(player);
 		// Deliberately NOT touching the player's health/inventory/flags here (that used to
@@ -84,7 +85,7 @@ public class GameListener implements Listener {
 	@EventHandler
 	public void onRespawn(PlayerRespawnEvent e) {
 		Player player = e.getPlayer();
-		applog.log(Level.INFO, "[DEBUG] onRespawn: " + player.getName() + " respawning (active=" + game.isActive() + ")");
+		if (Commands.isDebugMode()) applog.log(Level.INFO, "[DEBUG] onRespawn: " + player.getName() + " respawning (active=" + game.isActive() + ")");
 		// This fires once the player has actually transitioned from dead to alive (whether
 		// instantly, with doImmediateRespawn, or after they click the Respawn button) - unlike
 		// the previous timer-only approach, re-applying spectator state and scheduling the
@@ -119,7 +120,7 @@ public class GameListener implements Listener {
 	public void onBreak(BlockBreakEvent e) {
 		Player player = e.getPlayer();
 		boolean editing = isEditing(player);
-		applog.log(Level.INFO, "[DEBUG] onBreak: " + player.getName() + " broke " + e.getBlock().getType()
+		if (Commands.isDebugMode()) applog.log(Level.INFO, "[DEBUG] onBreak: " + player.getName() + " broke " + e.getBlock().getType()
 				+ " heldCustomItem=" + heldCustomItemKey(player) + " editing=" + editing
 				+ " willCancel=" + !editing);
 		if (editing) {
@@ -158,7 +159,7 @@ public class GameListener implements Listener {
 		boolean editing = isEditing(player);
 		boolean playing = game.getPlayerStatus(player);
 		boolean willCancel = !playing && !editing;
-		applog.log(Level.INFO, "[DEBUG] onWorldInteract: " + player.getName() + " action=" + e.getAction()
+		if (Commands.isDebugMode()) applog.log(Level.INFO, "[DEBUG] onWorldInteract: " + player.getName() + " action=" + e.getAction()
 				+ " item=" + e.getItem() + " playerStatus=" + playing + " editing=" + editing
 				+ " alreadyCancelled=" + e.isCancelled() + " willCancel=" + willCancel);
 		if (willCancel) {

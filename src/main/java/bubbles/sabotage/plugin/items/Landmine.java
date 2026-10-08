@@ -1,5 +1,6 @@
 package bubbles.sabotage.plugin.items;
 
+import bubbles.sabotage.plugin.Commands;
 import bubbles.sabotage.plugin.GUI;
 import bubbles.sabotage.plugin.items.customitem.CustomItem;
 import bubbles.sabotage.plugin.util.Text;
@@ -184,25 +185,25 @@ public class Landmine extends CustomItem {
     @Override
     protected void onDeath(PlayerDeathEvent e) {
         Player p = e.getPlayer();
-        System.out.println("[LANDMINE DEBUG] Player " + p.getName() + " died!");
-        System.out.println("[LANDMINE DEBUG] Total landmines on map: " + landmineLocations.size());
+        if (Commands.isDebugMode()) System.out.println("[LANDMINE DEBUG] Player " + p.getName() + " died!");
+        if (Commands.isDebugMode()) System.out.println("[LANDMINE DEBUG] Total landmines on map: " + landmineLocations.size());
         Set<Location> toRemove = new HashSet<>();
         for (Location loc : landmineLocations.keySet()) {
             Player owner = landmineLocations.get(loc);
-            System.out.println("[LANDMINE DEBUG] Checking mine at " + loc + " owned by " + owner.getName());
+            if (Commands.isDebugMode()) System.out.println("[LANDMINE DEBUG] Checking mine at " + loc + " owned by " + owner.getName());
             if (owner.equals(p)) {
-                System.out.println("[LANDMINE DEBUG] Found mine owned by " + p.getName() + " at " + loc);
+                if (Commands.isDebugMode()) System.out.println("[LANDMINE DEBUG] Found mine owned by " + p.getName() + " at " + loc);
                 loc.getBlock().setType(Material.AIR);
-                System.out.println("[LANDMINE DEBUG] Set block to AIR at " + loc);
+                if (Commands.isDebugMode()) System.out.println("[LANDMINE DEBUG] Set block to AIR at " + loc);
                 toRemove.add(loc);
             }
         }
-        System.out.println("[LANDMINE DEBUG] Removing " + toRemove.size() + " mines from HashMap");
+        if (Commands.isDebugMode()) System.out.println("[LANDMINE DEBUG] Removing " + toRemove.size() + " mines from HashMap");
         for (Location loc : toRemove) {
             landmineLocations.remove(loc);
-            System.out.println("[LANDMINE DEBUG] Removed mine from HashMap at " + loc);
+            if (Commands.isDebugMode()) System.out.println("[LANDMINE DEBUG] Removed mine from HashMap at " + loc);
         }
-        System.out.println("[LANDMINE DEBUG] Landmines remaining: " + landmineLocations.size());
+        if (Commands.isDebugMode()) System.out.println("[LANDMINE DEBUG] Landmines remaining: " + landmineLocations.size());
     }
 
     @Override
