@@ -79,6 +79,8 @@ public class SabTeams {
 			team.color(NamedTextColor.GOLD);
 		} else if (team.getName().toLowerCase().contains("aqua")) {
 			team.color(NamedTextColor.AQUA);
+		} else if (team.getName().toLowerCase().contains("yellow")) {
+			team.color(NamedTextColor.YELLOW);
 		}
 		team.setAllowFriendlyFire(false);
 	}
@@ -104,6 +106,8 @@ public class SabTeams {
 			item = new ItemStack(Material.ORANGE_WOOL);
 		} else if (name.toLowerCase().contains("aqua")) {
 			item = new ItemStack(Material.CYAN_WOOL);
+		} else if (name.toLowerCase().contains("yellow")) {
+			item = new ItemStack(Material.YELLOW_WOOL);
 		}
 		return item;
 	}
@@ -132,6 +136,8 @@ public class SabTeams {
 				return Color.fromRGB(0xFF55FF);
 			case AQUA:
 				return Color.fromRGB(0x55FFFF);
+			case YELLOW:
+				return Color.fromRGB(0xFFFF55);
 			default:
 				break;
 		}

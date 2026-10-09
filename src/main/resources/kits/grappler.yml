@@ -1,0 +1,22 @@
+name: grappler
+price: 3
+icon: FISHING_ROD
+description:
+- Can Grapple to distant locations.
+- Hitting a player with the grappler pulls them towards you.
+hotbar:
+  '1':
+    material: IRON_SWORD
+    enchants:
+      KNOCKBACK: 1
+  '2':
+    custom: grappler
+  '3':
+    material: ARROW
+    amount: 1
+armor:
+  boots: DIAMOND_BOOTS
+  leggings: CHAINMAIL_LEGGINGS
+  chestplate: CHAINMAIL_CHESTPLATE
+  helmet: DIAMOND_HELMET
+potionEffects: []

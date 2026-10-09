@@ -1,0 +1,23 @@
+# Kit: Bacca
+# Slot 0 of the hotbar is always the Blaze Powder defuse kit - do not set it here.
+name: bacca
+price: 5
+icon: DIAMOND_AXE
+description:
+  - "Every kill with this axe increases its Sharpness level."
+  - "Carries extra steak for sustenance."
+
+hotbar:
+  1:
+    custom: baccasbounty
+  2:
+    custom: steak
+    amount: 2
+
+armor:
+  boots: IRON_BOOTS
+  leggings: NONE
+  chestplate: IRON_CHESTPLATE
+  helmet: IRON_HELMET
+
+potionEffects: []

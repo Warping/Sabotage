@@ -5,6 +5,7 @@ import bubbles.sabotage.plugin.Commands;
 import bubbles.sabotage.plugin.Main;
 import bubbles.sabotage.plugin.game.Game;
 import org.bukkit.Material;
+import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Arrow;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -17,6 +18,8 @@ import org.bukkit.event.player.PlayerInteractAtEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.EquipmentSlot;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataType;
 
 import java.util.logging.Level;
 
@@ -27,9 +30,36 @@ public abstract class CustomItem implements Listener {
 	private Level LOG_LEVEL = Level.INFO;
 	private ItemStack customItem;
 	private Main plugin = Main.getPlugin(Main.class);
-	
+	// Tag written into every custom item's PersistentDataContainer so the plugin can
+	// still recognize it after its ItemMeta (enchants, lore, name, etc.) is modified in-place.
+	private final NamespacedKey idKey = new NamespacedKey(plugin, "custom_item_id");
+
 	public CustomItem() {
 		plugin.getServer().getPluginManager().registerEvents(this, plugin);
+	}
+
+	/**
+	 * Unique identifier for this custom item type. Defaults to the concrete class name, which is
+	 * stable and distinct per CustomItem subclass. Override if multiple instances of the same
+	 * subclass need to be told apart (not currently needed by any item).
+	 */
+	protected String getItemId() {
+		return getClass().getName();
+	}
+
+	/**
+	 * Checks whether the given ItemStack is (a copy/instance of) this custom item, based on the
+	 * persistent tag stamped by {@link #setItem(ItemStack)} rather than full ItemStack equality.
+	 * This means the actual item in a player's inventory can have its enchants/lore/name/etc.
+	 * freely modified (e.g. to add a Sharpness level on kill) without the plugin losing track of
+	 * what it is.
+	 */
+	public boolean isCustomItem(ItemStack item) {
+		if (item == null || item.getType() == Material.AIR || !item.hasItemMeta()) {
+			return false;
+		}
+		String id = item.getItemMeta().getPersistentDataContainer().get(idKey, PersistentDataType.STRING);
+		return getItemId().equals(id);
 	}
 	
 	public void give(Player player, int count) {
@@ -49,6 +79,12 @@ public abstract class CustomItem implements Listener {
 	}
 	
 	public void consume(Player player, ItemStack item, int count) {
+		if (isCustomItem(item)) {
+			// Tag-based removal: individual copies may have diverging ItemMeta (enchants, lore,
+			// etc.), so Bukkit's meta-sensitive removeItem()/containsAtLeast() can't be trusted.
+			consumeTaggedItem(player, count);
+			return;
+		}
 		ItemStack offHandItem = player.getInventory().getItemInOffHand().clone();
 		offHandItem.setAmount(count);
 		if (player.getInventory().containsAtLeast(item, count)) {
@@ -67,11 +103,47 @@ public abstract class CustomItem implements Listener {
 		}
 	}
 
+	private void consumeTaggedItem(Player player, int count) {
+		int remaining = count;
+		ItemStack[] contents = player.getInventory().getContents();
+		for (int i = 0; i < contents.length && remaining > 0; i++) {
+			ItemStack stack = contents[i];
+			if (!isCustomItem(stack)) {
+				continue;
+			}
+			int take = Math.min(remaining, stack.getAmount());
+			if (stack.getAmount() - take <= 0) {
+				player.getInventory().setItem(i, null);
+			} else {
+				stack.setAmount(stack.getAmount() - take);
+			}
+			remaining -= take;
+		}
+		if (remaining > 0) {
+			ItemStack offHand = player.getInventory().getItemInOffHand();
+			if (isCustomItem(offHand)) {
+				int take = Math.min(remaining, offHand.getAmount());
+				if (offHand.getAmount() - take <= 0) {
+					player.getInventory().setItemInOffHand(new ItemStack(Material.AIR));
+				} else {
+					offHand.setAmount(offHand.getAmount() - take);
+				}
+				remaining -= take;
+			}
+		}
+		if (remaining > 0) {
+			applog.log(LOG_LEVEL, "Cant Remove Item from");
+		}
+	}
+
 	public void consumeAll(Player player, ItemStack item) {
 		player.getInventory().remove(item.getType());
 	}
 
 	public boolean contains(Player player, ItemStack item, int count) {
+		if (isCustomItem(item)) {
+			return countTaggedItems(player) >= count;
+		}
 		if (player.getInventory().containsAtLeast(item, count)) {
 			return true;
 		} else if (player.getInventory().getItemInOffHand().getType().equals(item.getType())
@@ -81,10 +153,28 @@ public abstract class CustomItem implements Listener {
 			return false;
 		}
 	}
+
+	private int countTaggedItems(Player player) {
+		int total = 0;
+		for (ItemStack stack : player.getInventory().getContents()) {
+			if (isCustomItem(stack)) {
+				total += stack.getAmount();
+			}
+		}
+		ItemStack offHand = player.getInventory().getItemInOffHand();
+		if (isCustomItem(offHand)) {
+			total += offHand.getAmount();
+		}
+		return total;
+	}
 	
 	public void setItem(ItemStack item) {
-		customItem = item.clone();
-		customItem.setAmount(1);
+		ItemStack stamped = item.clone();
+		stamped.setAmount(1);
+		ItemMeta meta = stamped.getItemMeta();
+		meta.getPersistentDataContainer().set(idKey, PersistentDataType.STRING, getItemId());
+		stamped.setItemMeta(meta);
+		customItem = stamped;
 	}
 	
 	public ItemStack getItem() {
@@ -96,9 +186,7 @@ public abstract class CustomItem implements Listener {
 		if (e.getItem()==null) {
 			return;
 		}
-		ItemStack eventItem = e.getItem().clone();
-		eventItem.setAmount(1);
-		if (eventItem.equals(customItem)) {
+		if (isCustomItem(e.getItem())) {
 			String who = e.getPlayer().getName();
 			String tag = "[DEBUG] " + getClass().getSimpleName() + " used by " + who + ": ";
 			switch (e.getAction()) {
@@ -147,14 +235,10 @@ public abstract class CustomItem implements Listener {
 			} else {
 				return;
 			}
-			ItemStack eventItem1 = attacker.getInventory().getItemInMainHand().clone();
-			ItemStack eventItem2 = attacker.getInventory().getItemInOffHand().clone();
-			eventItem1.setAmount(1);
-			eventItem2.setAmount(1);
-			if (eventItem1.equals(customItem)) {
+			if (isCustomItem(attacker.getInventory().getItemInMainHand())) {
 				if (Commands.isDebugMode()) applog.log(LOG_LEVEL,"Attacked! MainHand");
 				onAttack(e, true);
-			} else if (eventItem2.equals(customItem)) {
+			} else if (isCustomItem(attacker.getInventory().getItemInOffHand())) {
 				if (Commands.isDebugMode()) applog.log(LOG_LEVEL,"Attacked! OffHand");
 				onAttack(e, false);	
 			}
@@ -165,11 +249,9 @@ public abstract class CustomItem implements Listener {
 	public void onProjectileHit(ProjectileHitEvent e) {
 		if (e.getEntity().getShooter() instanceof Player) {
 			Player shooter = (Player) e.getEntity().getShooter();
-			ItemStack eventItem1 = shooter.getInventory().getItemInMainHand().clone();
-			ItemStack eventItem2 = shooter.getInventory().getItemInOffHand().clone();
-			eventItem1.setAmount(1);
-			eventItem2.setAmount(1);
-			if (eventItem1.equals(customItem)) {
+			ItemStack eventItem1 = shooter.getInventory().getItemInMainHand();
+			ItemStack eventItem2 = shooter.getInventory().getItemInOffHand();
+			if (isCustomItem(eventItem1)) {
 				if (e.getHitBlock()!=null) {
 					if (Commands.isDebugMode()) applog.log(LOG_LEVEL,"Hit Block! MainHand");
 					onShotBlock(e,true);
@@ -177,7 +259,7 @@ public abstract class CustomItem implements Listener {
 					if (Commands.isDebugMode()) applog.log(LOG_LEVEL,"Hit Player! MainHand");
 					onShotPlayer(e,true);
 				}
-			} else if (eventItem2.equals(customItem)) {
+			} else if (isCustomItem(eventItem2)) {
 				if (e.getHitBlock()!=null) {
 					if (Commands.isDebugMode()) applog.log(LOG_LEVEL,"Hit Block! OffHand");
 					onShotBlock(e,false);
@@ -193,14 +275,12 @@ public abstract class CustomItem implements Listener {
 	public void onPlayerInteract(PlayerInteractAtEntityEvent e) {
 		if (e.getRightClicked() instanceof Player) {
 			Player attacker = e.getPlayer();
-			ItemStack eventItem1 = attacker.getInventory().getItemInMainHand().clone();
-			ItemStack eventItem2 = attacker.getInventory().getItemInOffHand().clone();
-			eventItem1.setAmount(1);
-			eventItem1.setAmount(1);
-			if (e.getHand()==EquipmentSlot.OFF_HAND && eventItem2.equals(customItem)) {
+			ItemStack eventItem1 = attacker.getInventory().getItemInMainHand();
+			ItemStack eventItem2 = attacker.getInventory().getItemInOffHand();
+			if (e.getHand()==EquipmentSlot.OFF_HAND && isCustomItem(eventItem2)) {
 				if (Commands.isDebugMode()) applog.log(LOG_LEVEL,"Right Click Player! OffHand");
 				onRightClickPlayer(e,false);
-			} else if (e.getHand()==EquipmentSlot.HAND && eventItem1.equals(customItem)){
+			} else if (e.getHand()==EquipmentSlot.HAND && isCustomItem(eventItem1)){
 				if (Commands.isDebugMode()) applog.log(LOG_LEVEL,"Right Click Player! MainHand");
 				onRightClickPlayer(e,true);
 			}
@@ -210,12 +290,12 @@ public abstract class CustomItem implements Listener {
 	@EventHandler
 	public void onShootE(EntityShootBowEvent e) {
 		if (e.getEntity() instanceof Player) {
-			ItemStack eventItem1 = ((Player) e.getEntity()).getInventory().getItemInMainHand().clone();
-			ItemStack eventItem2 = ((Player) e.getEntity()).getInventory().getItemInOffHand().clone();
-			if (eventItem1.equals(customItem) && e.getHand()==EquipmentSlot.HAND) {
+			ItemStack eventItem1 = ((Player) e.getEntity()).getInventory().getItemInMainHand();
+			ItemStack eventItem2 = ((Player) e.getEntity()).getInventory().getItemInOffHand();
+			if (isCustomItem(eventItem1) && e.getHand()==EquipmentSlot.HAND) {
 				if (Commands.isDebugMode()) applog.log(LOG_LEVEL,"Shot Bow! MainHand");
 				onShoot(e,true);
-			} else if (eventItem2.equals(customItem) && e.getHand()==EquipmentSlot.OFF_HAND) {
+			} else if (isCustomItem(eventItem2) && e.getHand()==EquipmentSlot.OFF_HAND) {
 				if (Commands.isDebugMode()) applog.log(LOG_LEVEL,"Shot Bow! OffHand");
 				onShoot(e,false);
 			}
@@ -230,11 +310,11 @@ public abstract class CustomItem implements Listener {
 		if (attacker == null) {
 			return;
 		}
-		if (attacker.getInventory().contains(customItem)) {
+		if (countTaggedItems(attacker) > 0) {
 			if (Commands.isDebugMode()) applog.log(LOG_LEVEL,"Kill Event! " + attacker.getName() + " killed " + victim.getName() + " with " + customItem.getType().name() + ".");
 			onKill(e, attacker, victim);
 		}
-		if (victim.getInventory().contains(customItem)) {
+		if (countTaggedItems(victim) > 0) {
 			if (Commands.isDebugMode()) applog.log(LOG_LEVEL,"Death Event!");
 			onDeath(e);
 		}

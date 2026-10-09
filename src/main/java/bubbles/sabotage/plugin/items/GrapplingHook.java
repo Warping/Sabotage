@@ -28,6 +28,7 @@ import bubbles.sabotage.plugin.util.Text;
 public class GrapplingHook extends CustomItem implements Listener {
 	
 	private HashMap<Player, Boolean> grappled = new HashMap<Player, Boolean>();
+	private final double GRAPPLE_MULTIPLIER = 0.12;
 	
 	public GrapplingHook() {
 		super();
@@ -83,7 +84,7 @@ public class GrapplingHook extends CustomItem implements Listener {
 			@Override
 			public void run() {
 				shooter.sendMessage(ChatColor.GREEN + "You grappled " + victim.getName() + " from " + distance + " blocks away!");
-				victim.setVelocity(launch.multiply(0.25).multiply(distance));
+				victim.setVelocity(launch.multiply(GRAPPLE_MULTIPLIER).multiply(distance));
 			}
 		}, 3L);
 		getPlugin().getServer().getScheduler().scheduleSyncDelayedTask(getPlugin(), new Runnable() {
@@ -100,12 +101,12 @@ public class GrapplingHook extends CustomItem implements Listener {
 	private void hookHit(Player shooter, Block block) {
 		shooter.sendMessage(ChatColor.GREEN + "Grappling...");
 		Vector origin = shooter.getLocation().toVector();
-		Location bLoc = block.getLocation().add(0.0, 2.0, 0);
+		Location bLoc = block.getLocation().add(0.0, 8.0, 0);
 		Vector target = bLoc.toVector();
 		Vector launch = target.subtract(origin);
 		double distance = Math.sqrt(Math.pow(launch.getX(), 2) + Math.pow(launch.getZ(), 2));
 		launch.normalize();
-		shooter.setVelocity(launch.multiply(0.3).multiply(distance));
+		shooter.setVelocity(launch.multiply(GRAPPLE_MULTIPLIER).multiply(distance));
 		grappled.put(shooter, true);
 	}
 	

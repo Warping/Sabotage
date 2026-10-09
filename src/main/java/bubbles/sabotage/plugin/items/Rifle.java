@@ -4,12 +4,13 @@ import bubbles.sabotage.plugin.items.customitem.CustomItem;
 import bubbles.sabotage.plugin.util.Text;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
+import org.bukkit.damage.DamageSource;
+import org.bukkit.damage.DamageType;
 import org.bukkit.entity.Arrow;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.EntityShootBowEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
-import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
@@ -23,7 +24,6 @@ public class Rifle extends CustomItem {
     private static final long RELOAD_DELAY = 200L;
     private final HashMap<Player, Integer> arrowCount = new HashMap<>();
     private final HashMap<Player, Boolean> reloading = new HashMap<>();
-    private final HashMap<Player, Long> reloadStartTime = new HashMap<>();
 
     public Rifle() {
         super();
@@ -78,6 +78,8 @@ public class Rifle extends CustomItem {
             return;
         }
 
+        e.setCancelled(true);
+
         Arrow arrow = (Arrow) e.getEntity();
         Player shooter = (Player) arrow.getShooter();
         Player victim = (Player) e.getHitEntity();
@@ -85,29 +87,34 @@ public class Rifle extends CustomItem {
         double distance = shooter.getLocation().distance(victim.getLocation());
         double damage = 0;
 
-        if (distance >= 1 && distance <= 10) {
-            damage = 4.0;
+        if (distance >= 1 && distance <= 20) {
+            damage = 2.0;
         } else if (distance >= 20 && distance <= 40) {
-            damage = 8.0;
+            damage = 4.0;
         } else if (distance >= 50) {
-            victim.setHealth(0);
+            damage = 100.0; // Instant kill
             return;
         } else {
             return;
         }
 
-        victim.damage(damage);
+        DamageSource source = DamageSource.builder(DamageType.ARROW)
+            .withCausingEntity(shooter) // Explicitly attributes credit for the hit to the shooter
+            .withDirectEntity(arrow)     // Tracks the arrow as the direct projectile weapon
+            .build();
+            
+        if (source != null) {
+            victim.damage(damage, source);
+        }
     }
 
     private void checkReload(Player shooter) {
         if (arrowCount.getOrDefault(shooter, 0) == 0) {
             reloading.put(shooter, true);
-            reloadStartTime.put(shooter, System.currentTimeMillis());
             getPlugin().getServer().getScheduler().runTaskLater(getPlugin(), () -> {
                 if (reloading.getOrDefault(shooter, false)) {
                     arrowCount.put(shooter, ARROW_AMMO);
                     reloading.put(shooter, false);
-                    reloadStartTime.remove(shooter);
                     give(shooter, new ItemStack(Material.ARROW), ARROW_AMMO);
                     shooter.sendMessage(ChatColor.YELLOW + "Rifle reloaded!");
                 }
@@ -116,29 +123,15 @@ public class Rifle extends CustomItem {
     }
 
     @Override
-    protected void onRightClickAir(PlayerInteractEvent e, boolean mainHand) {
-        Player player = e.getPlayer();
-        if (arrowCount.getOrDefault(player, 0) == 0 && reloading.getOrDefault(player, false)) {
-            long elapsedMs = System.currentTimeMillis() - reloadStartTime.getOrDefault(player, System.currentTimeMillis());
-            long totalMs = RELOAD_DELAY * 50;
-            long remainingMs = Math.max(0, totalMs - elapsedMs);
-            double remainingSeconds = remainingMs / 1000.0;
-            player.sendMessage(ChatColor.RED + String.format("Reloading... %.1fs remaining", remainingSeconds));
-        }
-    }
-
-    @Override
     protected void onDeath(PlayerDeathEvent e) {
         Player player = e.getEntity();
         arrowCount.put(player, ARROW_AMMO);
         reloading.put(player, false);
-        reloadStartTime.remove(player);
     }
 
     public void stop() {
         arrowCount.clear();
         reloading.clear();
-        reloadStartTime.clear();
     }
 }
 

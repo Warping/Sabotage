@@ -1,0 +1,24 @@
+name: ghost
+price: 3
+icon: GHAST_TEAR
+description:
+- A sneaky loadout built around stealth.
+- Trades armor for mobility.
+hotbar:
+  '1':
+    material: GOLDEN_SWORD
+    enchants:
+      SHARPNESS: 1
+  '3':
+    material: ENDER_PEARL
+    amount: 6
+armor:
+  boots: NONE
+  leggings: NONE
+  chestplate: NONE
+  helmet: NONE
+potionEffects:
+- type: invisibility
+  amplifier: 1
+  duration: -1
+  hideParticles: true

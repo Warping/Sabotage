@@ -8,7 +8,10 @@ description:
   - "Distance-based damage with a reload mechanic."
 
 hotbar:
-  1: STONE_SWORD
+  1:
+    material: STONE_SWORD
+    enchants:
+      KNOCKBACK: 2
   2:
     custom: rifle
   3:
