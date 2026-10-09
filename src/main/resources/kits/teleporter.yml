@@ -1,0 +1,20 @@
+name: teleporter
+price: 2
+icon: SPAWNER
+description:
+- A kit focused on placing and using teleporters efficiently.
+- He can quickly move around the battlefield using his teleporters.
+hotbar:
+  '1':
+    material: IRON_SWORD
+  '2':
+    custom: teleporter
+  '3':
+    material: SPAWNER
+    amount: 2
+armor:
+  boots: IRON_BOOTS
+  leggings: IRON_LEGGINGS
+  chestplate: IRON_CHESTPLATE
+  helmet: IRON_HELMET
+potionEffects: []

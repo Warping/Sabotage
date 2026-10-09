@@ -89,6 +89,14 @@ public class GameListener implements Listener {
 			// otherwise they are stuck as a permanently hidden, invulnerable, kit-less spectator
 			// until they happen to die once (the only other code path that calls respawn()).
 			game.respawn(player);
+			
+			if (game.getTeams().getTeamOfPlayer(player) == null) {
+				game.teamBalance();
+			}
+			
+			if (game.getTeams().getTeamOfPlayer(player) != null) {
+				player.setHealth(0);
+			}
 		}
 		game.getPlugin().updateScoreboard();
 

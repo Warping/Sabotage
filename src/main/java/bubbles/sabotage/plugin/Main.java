@@ -63,6 +63,7 @@ public class Main extends JavaPlugin {
 		items.put("rewind", new RewindClock());
 		items.put("flare", new Flare());
 		items.put("landmine", new Landmine());
+		items.put("teleporter", new Teleporter());
 		items.put("bloodsucker", new Bloodsucker());
 		items.put("baccasbounty", new BaccasBounty());
 		items.put("poisoner", new Poisoner());

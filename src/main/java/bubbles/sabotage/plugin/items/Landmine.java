@@ -18,6 +18,7 @@ import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerInteractAtEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.damage.DamageSource;
@@ -318,6 +319,18 @@ public class Landmine extends CustomItem {
         Player p = e.getPlayer();
         if (Commands.isDebugMode()) System.out.println("[LANDMINE DEBUG] Player " + p.getName() + " died!");
         if (Commands.isDebugMode()) System.out.println("[LANDMINE DEBUG] Total landmines on map: " + landmineLocations.size());
+        removeAllLandmines(p);
+    }
+
+    @EventHandler
+    public void onPlayerDisconnect(PlayerQuitEvent e) {
+        Player p = e.getPlayer();
+        if (Commands.isDebugMode()) System.out.println("[LANDMINE DEBUG] Player " + p.getName() + " disconnected!");
+        if (Commands.isDebugMode()) System.out.println("[LANDMINE DEBUG] Total landmines on map: " + landmineLocations.size());
+        removeAllLandmines(p);
+    }
+
+    private void removeAllLandmines(Player p) {
         Set<Location> toRemove = new HashSet<>();
         for (Location loc : landmineLocations.keySet()) {
             Player owner = landmineLocations.get(loc);
