@@ -8,6 +8,9 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.World;
+import org.bukkit.boss.BossBar;
+import org.bukkit.boss.BarColor;
+import org.bukkit.boss.BarStyle;
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import org.bukkit.configuration.serialization.SerializableAs;
 import org.bukkit.entity.Player;
@@ -37,6 +40,8 @@ public class Bomb implements ConfigurationSerializable {
 	private Double disarmStatus; //Percent until bomb is disarmed
 	private HashMap<Team, Double> teamStatus = new HashMap<Team, Double>(); //Percent until team bomb is armed
 	private HashMap<Team, Integer> teamTimer = new HashMap<Team, Integer>(); //Timer until bomb explodes for team
+	private HashMap<Player, BossBar> armingBars = new HashMap<Player, BossBar>(); //BossBars for arming progress
+	private BossBar disarmingBar; //BossBar for disarming progress (shared across players)
 	private BombListener listen; //Listens for arm/disarm events as well as break events
 	private Main plugin = Main.getPlugin(Main.class); //Loads current plugin for world access/server messages etc.
 	private int startTime; //Start time for each team
@@ -151,6 +156,12 @@ public class Bomb implements ConfigurationSerializable {
 		isCooldown = false;
 		isArmed = false;
 		isExploded = false;
+		armingBars.values().forEach(BossBar::removeAll);
+		armingBars.clear();
+		if (disarmingBar != null) {
+			disarmingBar.removeAll();
+			disarmingBar = null;
+		}
 	}
 	
 	public void explode() {
@@ -265,9 +276,10 @@ public class Bomb implements ConfigurationSerializable {
 				if (newStatus==oldStatus) {
 					resetArmStatus(team);
 					//plugin.updateScoreboard();
-				}
-				if ((float) oldStatus == player.getExp()) {
-					player.setExp(0F);
+					if (armingBars.containsKey(player)) {
+						armingBars.get(player).removeAll();
+						armingBars.remove(player);
+					}
 				}
 				String log = Double.toString(newStatus - oldStatus);
 				applog.log(LOG_LEVEL_2, log);
@@ -296,9 +308,10 @@ public class Bomb implements ConfigurationSerializable {
 				if (newStatus==oldStatus) {
 					resetDisarmStatus();
 					plugin.updateScoreboard();
-				}
-				if ((float) oldStatus == player.getExp()) {
-					player.setExp(0F);
+					if (disarmingBar != null) {
+						disarmingBar.removeAll();
+						disarmingBar = null;
+					}
 				}
 			}
 		}, 20L);
@@ -318,15 +331,25 @@ public class Bomb implements ConfigurationSerializable {
 		val += 0.025;
 		val = Math.round(val * 100.0) / 100.0;
 		disarmStatus = val;
-		player.setExp(disarmStatus.floatValue());
+		
+		if (disarmingBar == null) {
+			disarmingBar = plugin.getServer().createBossBar("Disarming Bomb", BarColor.RED, BarStyle.SOLID);
+		}
+		disarmingBar.setProgress(disarmStatus);
+		if (!disarmingBar.getPlayers().contains(player)) {
+			disarmingBar.addPlayer(player);
+		}
+		
 		if (disarmStatus>=1.0) {
 			disarmBomb(team);
 			resetArmStatusAll();
-			player.setExp(0F);
+			if (disarmingBar != null) {
+				disarmingBar.removeAll();
+				disarmingBar = null;
+			}
 		}
 		//plugin.updateScoreboard();
 		disarmingCheck(disarmStatus, player);
-		
 	}
 
 	public void arming(Player player, Team team) {
@@ -338,11 +361,21 @@ public class Bomb implements ConfigurationSerializable {
 		val += 0.025;
 		val = Math.round(val * 100.0) / 100.0;
 		teamStatus.put(team, val);
-		player.setExp(teamStatus.get(team).floatValue());
+		
+		if (!armingBars.containsKey(player)) {
+			BossBar bar = plugin.getServer().createBossBar("Arming Bomb", BarColor.YELLOW, BarStyle.SOLID);
+			armingBars.put(player, bar);
+			bar.addPlayer(player);
+		}
+		armingBars.get(player).setProgress(teamStatus.get(team));
+		
 		if (teamStatus.get(team)>=1.0) {
 			armBomb(team);
 			resetArmStatusAll();
-			player.setExp(0F);
+			if (armingBars.containsKey(player)) {
+				armingBars.get(player).removeAll();
+				armingBars.remove(player);
+			}
 		}
 		//plugin.updateScoreboard();
 		armingCheck(team, teamStatus.get(team), player);

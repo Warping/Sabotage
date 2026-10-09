@@ -26,7 +26,7 @@
 - [ ] medic
 - [ ] teleporter
 - [ ] vegetarian
-- [ ] venom
+- [X] venom
 - [ ] warper
 - [ ] speed
 - [ ] bleeder (new)
@@ -35,6 +35,8 @@
 - [ ] reaper
 - [ ] sacraficial
 - [ ] noahcraft
+- [ ] spy
+- [ ] skinner
 
 ## Summary
 
