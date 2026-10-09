@@ -22,7 +22,7 @@
 - [X] bloodsucker
 - [ ] mechanic (new)
 - [ ] glass (new)
-- [ ] ninja
+- [X] ninja
 - [ ] medic
 - [ ] teleporter
 - [ ] vegetarian

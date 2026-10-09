@@ -1,27 +1,22 @@
-# Kit: Demo
-# Slot 0 of the hotbar is always the Blaze Powder defuse kit - do not set it here.
 name: demolition
 price: 5
 icon: HEAVY_WEIGHTED_PRESSURE_PLATE
 description:
-  - "Places hidden landmines using the Landmine Arming Tool."
-  - "Carries spare pressure plates and an arrow for utility."
-
+- Places hidden landmines using the Landmine Arming Tool.
+- Carries spare pressure plates and an arrow for utility.
 hotbar:
-  1:
+  '1':
     material: STONE_SWORD
     enchants:
       KNOCKBACK: 2
-  2:
+  '2':
     custom: landmine
-  3:
+  '3':
     material: HEAVY_WEIGHTED_PRESSURE_PLATE
     amount: 4
-
 armor:
   boots: COPPER_BOOTS
   leggings: IRON_LEGGINGS
   chestplate: IRON_CHESTPLATE
   helmet: COPPER_HELMET
-
 potionEffects: []

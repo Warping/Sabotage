@@ -1,21 +1,16 @@
-# Kit: Rewind
-# Slot 0 of the hotbar is always the Blaze Powder defuse kit - do not set it here.
 name: rewind
 price: 3
 icon: CLOCK
 description:
-  - "Carries the Rewind Clock to teleport back to an earlier position."
-  - "A spare helmet in the hotbar backs up your worn armor."
-
+- Carries the Rewind Clock to teleport back to an earlier position.
+- A spare helmet in the hotbar backs up your worn armor.
 hotbar:
-  1: IRON_SWORD
-  2:
+  '1': IRON_SWORD
+  '2':
     custom: rewind
-
 armor:
   boots: IRON_BOOTS
   leggings: CHAINMAIL_LEGGINGS
   chestplate: IRON_CHESTPLATE
   helmet: CHAINMAIL_HELMET
-
 potionEffects: []

@@ -1,22 +1,20 @@
-# Kit: Trooper
-# Slot 0 of the hotbar is always the Blaze Powder defuse kit - do not set it here.
 name: trooper
 price: 0
 icon: IRON_SWORD
 description:
-  - "A standard-issue loadout with an iron sword."
-  - "Carries a handful of golden apples for sustain."
-
+- A standard-issue loadout with an iron sword.
+- Carries a handful of golden apples for sustain.
 hotbar:
-  1: IRON_SWORD
-  2:
+  '1':
+    material: IRON_SWORD
+    enchants:
+      SHARPNESS: 1
+  '2':
     material: GOLDEN_APPLE
     amount: 5
-
 armor:
   boots: IRON_BOOTS
   leggings: IRON_LEGGINGS
   chestplate: IRON_CHESTPLATE
   helmet: IRON_HELMET
-
 potionEffects: []

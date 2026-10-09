@@ -1,0 +1,26 @@
+# Kit: Ninja
+# Slot 0 of the hotbar is always the Blaze Powder defuse kit - do not set it here.
+name: ninja
+price: 0
+icon: ENDER_PEARL
+description:
+  - "High speed and decent combat capabilities."
+  - "Carries a handful of ender pearls for mobility."
+
+hotbar:
+  1: IRON_SWORD
+  2:
+    material: ENDER_PEARL
+    amount: 6
+
+armor:
+  boots: CHAINMAIL_BOOTS
+  leggings: CHAINMAIL_LEGGINGS
+  chestplate: IRON_CHESTPLATE
+  helmet: IRON_HELMET
+
+potionEffects:
+- type: speed
+  amplifier: 1
+  duration: -1
+  hideParticles: true

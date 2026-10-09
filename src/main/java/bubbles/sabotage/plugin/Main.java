@@ -65,6 +65,7 @@ public class Main extends JavaPlugin {
 		items.put("landmine", new Landmine());
 		items.put("bloodsucker", new Bloodsucker());
 		items.put("baccasbounty", new BaccasBounty());
+		items.put("poisoner", new Poisoner());
 		for (String name : items.keySet()) {
 			applog.log(LOG_LEVEL,"Item Loaded: " + name + " : " + items.get(name).getItem().getType());
 		}

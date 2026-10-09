@@ -227,20 +227,21 @@ public abstract class CustomItem implements Listener {
 			Player attacker = null;
 			if (e.getDamager() instanceof Player) {
 				attacker = (Player) e.getDamager();
-			}
-			if (e.getDamager() instanceof Arrow) {
+			} else if (e.getDamager() instanceof Arrow) {
 				if (((Arrow) e.getDamager()).getShooter() instanceof Player) {
 					attacker = (Player) ((Arrow) e.getDamager()).getShooter();
 				}
 			} else {
 				return;
 			}
-			if (isCustomItem(attacker.getInventory().getItemInMainHand())) {
-				if (Commands.isDebugMode()) applog.log(LOG_LEVEL,"Attacked! MainHand");
-				onAttack(e, true);
-			} else if (isCustomItem(attacker.getInventory().getItemInOffHand())) {
-				if (Commands.isDebugMode()) applog.log(LOG_LEVEL,"Attacked! OffHand");
-				onAttack(e, false);	
+			if (attacker != null) {
+				if (isCustomItem(attacker.getInventory().getItemInMainHand())) {
+					if (Commands.isDebugMode()) applog.log(LOG_LEVEL,"Attacked! MainHand");
+					onAttack(e, true);
+				} else if (isCustomItem(attacker.getInventory().getItemInOffHand())) {
+					if (Commands.isDebugMode()) applog.log(LOG_LEVEL,"Attacked! OffHand");
+					onAttack(e, false);	
+				}
 			}
 		}
 	}

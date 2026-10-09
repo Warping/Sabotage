@@ -1,27 +1,22 @@
-# Kit: Explosive
-# Slot 0 of the hotbar is always the Blaze Powder defuse kit - do not set it here.
 name: explosive
 price: 3
 icon: FIREWORK_STAR
 description:
-  - "Launches grenades with grenade launcher."
-  - "Great support for bomb arming."
-
+- Launches grenades with grenade launcher.
+- Great support for bomb arming.
 hotbar:
-  1:
+  '1':
     material: STONE_SWORD
     enchants:
       KNOCKBACK: 1
-  2:
+  '2':
     custom: grenade
-  8:
+  '8':
     material: FIREWORK_STAR
     amount: 4
-
 armor:
   boots: DIAMOND_BOOTS
   leggings: GOLDEN_LEGGINGS
   chestplate: GOLDEN_CHESTPLATE
   helmet: DIAMOND_HELMET
-
 potionEffects: []

@@ -36,9 +36,52 @@ public class GameListener implements Listener {
 	@EventHandler
 	public void onJoin(PlayerJoinEvent e) {
 		Player player = e.getPlayer();
+		
+		if (game.getPlugin().getEditMode().isDebugMode()) {
+			System.out.println("[GameListener] onJoin START: " + player.getName());
+		}
+		
+		// Restore player's inventory state (survival or edit mode) from previous session
+		game.getPlugin().getEditMode().restoreInventoryState(player);
+		
+		if (game.getPlugin().getEditMode().isDebugMode()) {
+			ItemStack[] inv = player.getInventory().getContents();
+			StringBuilder sb = new StringBuilder();
+			for (int i = 0; i < Math.min(inv.length, 10); i++) {
+				if (inv[i] != null && inv[i].getType().toString() != "AIR") {
+					if (sb.length() > 0) sb.append(", ");
+					sb.append(inv[i].getType());
+				}
+			}
+			System.out.println("[GameListener] After restore: " + (sb.length() == 0 ? "EMPTY" : sb.toString()));
+		}
+		
+		// If player is in edit mode, skip normal game logic
+		if (game.getPlugin().getEditMode().isEditing(player)) {
+			if (game.getPlugin().getEditMode().isDebugMode()) {
+				System.out.println("[GameListener] onJoin: Player is editing, skipping spectator()");
+			}
+			return;
+		}
+		
+		if (game.getPlugin().getEditMode().isDebugMode()) {
+			System.out.println("[GameListener] onJoin: Calling spectator()...");
+		}
 		game.showPlayer(player);
 		player.setGameMode(GameMode.SURVIVAL);
 		game.spectator(player);
+		
+		if (game.getPlugin().getEditMode().isDebugMode()) {
+			ItemStack[] invAfter = player.getInventory().getContents();
+			StringBuilder sb2 = new StringBuilder();
+			for (int i = 0; i < Math.min(invAfter.length, 10); i++) {
+				if (invAfter[i] != null && invAfter[i].getType().toString() != "AIR") {
+					if (sb2.length() > 0) sb2.append(", ");
+					sb2.append(invAfter[i].getType());
+				}
+			}
+			System.out.println("[GameListener] After spectator(): " + (sb2.length() == 0 ? "EMPTY (CLEARED!)" : sb2.toString()));
+		}
 		if (game.isActive()) {
 			// Game.spectator() above hid this player from everyone (since the game is active)
 			// and gave them no kit. Unlike a mid-round death, a fresh join has no "waiting to
@@ -219,6 +262,21 @@ public class GameListener implements Listener {
 			}
 		}
 		return "none";
+	}
+
+	@EventHandler
+	public void onInventoryClose(org.bukkit.event.inventory.InventoryCloseEvent e) {
+		if (!(e.getPlayer() instanceof Player)) {
+			return;
+		}
+		Player player = (Player) e.getPlayer();
+		
+		if (game.getPlugin().getEditMode().isEditing(player)) {
+			if (game.getPlugin().getEditMode().isDebugMode()) {
+				System.out.println("[GameListener] onInventoryClose: " + player.getName() + " closed inventory while in edit mode - auto-saving creative inventory");
+			}
+			game.getPlugin().getEditMode().saveCreativeInventoryToDisk(player);
+		}
 	}
 		
 }

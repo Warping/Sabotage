@@ -2,6 +2,7 @@ package bubbles.sabotage.plugin;
 
 import bubbles.sabotage.plugin.game.Game;
 import bubbles.sabotage.plugin.util.Text;
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -29,18 +30,18 @@ public class Kit {
 
 	private final String name;
 	private final int price;
-	private final Material iconMaterial;
+	private final ItemStack iconItem;
 	private final List<String> description;
 	private final ItemStack[] hotbar; // size HOTBAR_SIZE, index 0 is always the defuse kit
 	private final ItemStack[] armor; // size ARMOR_SIZE: boots, leggings, chestplate, helmet
 	private final ItemStack offhand;
 	private final Collection<PotionEffect> potionEffects;
 
-	public Kit(String name, int price, Material iconMaterial, List<String> description, ItemStack[] hotbar,
+	public Kit(String name, int price, ItemStack iconItem, List<String> description, ItemStack[] hotbar,
 			ItemStack[] armor, ItemStack offhand, Collection<PotionEffect> potionEffects) {
 		this.name = name.trim().toLowerCase();
 		this.price = price;
-		this.iconMaterial = iconMaterial != null ? iconMaterial : Material.STONE;
+		this.iconItem = iconItem != null ? iconItem : new ItemStack(Material.STONE);
 		this.description = description != null ? description : new ArrayList<>();
 		this.hotbar = hotbar != null ? hotbar : new ItemStack[HOTBAR_SIZE];
 		this.armor = armor != null ? armor : new ItemStack[ARMOR_SIZE];
@@ -74,9 +75,10 @@ public class Kit {
 			offhand = offhand.clone();
 		}
 		Material icon = hotbar[1] != null ? hotbar[1].getType() : Material.STONE;
+		ItemStack iconItem = hotbar[1] != null ? hotbar[1].clone() : new ItemStack(Material.STONE);
 		List<String> description = new ArrayList<>();
 		description.add("No description set yet.");
-		return new Kit(name, price, icon, description, hotbar, armor, offhand, p.getActivePotionEffects());
+		return new Kit(name, price, iconItem, description, hotbar, armor, offhand, p.getActivePotionEffects());
 	}
 
 	public static boolean load(Player p, Kit k) {
@@ -109,8 +111,11 @@ public class Kit {
 	 * own fields each time, so repeated calls produce value-equal ItemStacks.
 	 */
 	public ItemStack getIcon() {
-		ItemStack icon = new ItemStack(iconMaterial);
+		ItemStack icon = iconItem.clone();
 		ItemMeta im = icon.getItemMeta();
+		if (im == null) {
+			im = Bukkit.getItemFactory().getItemMeta(icon.getType());
+		}
 		im.displayName(Text.of(ChatColor.LIGHT_PURPLE.toString() + ChatColor.BOLD + "Kit " + getCapitalizedName()));
 		List<String> lore = new ArrayList<>();
 		lore.add(ChatColor.GRAY + "Cost: " + ChatColor.GREEN + price);
@@ -131,7 +136,11 @@ public class Kit {
 	}
 
 	public Material getIconMaterial() {
-		return iconMaterial;
+		return iconItem.getType();
+	}
+
+	public ItemStack getIconItem() {
+		return iconItem;
 	}
 
 	public List<String> getDescription() {

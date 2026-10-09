@@ -73,6 +73,11 @@ public class Commands implements CommandExecutor {
 				debugMode = !debugMode;
 				p.sendMessage(ChatColor.GOLD + "Debug mode " + (debugMode ? ChatColor.GREEN + "enabled!" : ChatColor.RED + "disabled!"));
 				break;
+			
+			case "editmodedbg":
+				game.getPlugin().getEditMode().setDebugMode(!game.getPlugin().getEditMode().isDebugMode());
+				p.sendMessage(ChatColor.GOLD + "Edit mode debug " + (game.getPlugin().getEditMode().isDebugMode() ? ChatColor.GREEN + "enabled!" : ChatColor.RED + "disabled!"));
+				break;
 				
 			case "item":
 				if (args.length==4) {

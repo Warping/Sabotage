@@ -137,8 +137,13 @@ public final class KitIO {
 		YamlConfiguration config = YamlConfiguration.loadConfiguration(file);
 		String name = config.getString("name", file.getName().replace(".yml", ""));
 		int price = config.getInt("price", 0);
-		String iconName = config.getString("icon");
-		Material icon = iconName != null ? Material.matchMaterial(iconName) : null;
+		
+		Object iconRaw = config.get("icon");
+		ItemStack iconItem = null;
+		if (iconRaw != null) {
+			iconItem = parseItemSpec(iconRaw);
+		}
+		
 		List<String> description = config.getStringList("description");
 
 		ItemStack[] hotbar = new ItemStack[Kit.HOTBAR_SIZE];
@@ -179,11 +184,11 @@ public final class KitIO {
 			}
 		}
 
-		if (icon == null) {
-			icon = hotbar[1] != null ? hotbar[1].getType() : Material.STONE;
+		if (iconItem == null) {
+			iconItem = hotbar[1] != null ? hotbar[1].clone() : new ItemStack(Material.STONE);
 		}
 
-		return new Kit(name, price, icon, description, hotbar, armor, offhand, potionEffects);
+		return new Kit(name, price, iconItem, description, hotbar, armor, offhand, potionEffects);
 	}
 
 	private static ItemStack parseItemSpec(Object raw) {
@@ -227,6 +232,21 @@ public final class KitIO {
 
 		boolean metaChanged = false;
 		ItemMeta meta = item.getItemMeta();
+
+		if (material == Material.POTION || material == Material.SPLASH_POTION || material == Material.LINGERING_POTION) {
+			Object potionTypeObj = map.get("potion_type");
+			if (potionTypeObj != null) {
+				try {
+					org.bukkit.potion.PotionType potionType = org.bukkit.potion.PotionType.valueOf(potionTypeObj.toString().toUpperCase(Locale.ROOT));
+					org.bukkit.inventory.meta.PotionMeta potionMeta = (org.bukkit.inventory.meta.PotionMeta) meta;
+					potionMeta.setBasePotionType(potionType);
+					meta = potionMeta;
+					metaChanged = true;
+				} catch (IllegalArgumentException e) {
+					applog.log(Level.WARNING, "Invalid potion type: " + potionTypeObj);
+				}
+			}
+		}
 
 		Map<String, Object> enchantsMap = asMap(map.get("enchants"));
 		if (enchantsMap != null) {
@@ -294,7 +314,7 @@ public final class KitIO {
 		YamlConfiguration config = new YamlConfiguration();
 		config.set("name", kit.getName());
 		config.set("price", kit.getPrice());
-		config.set("icon", kit.getIconMaterial().name());
+		config.set("icon", toItemSpec(kit.getIconItem()));
 		config.set("description", kit.getDescription());
 
 		ItemStack[] hotbar = kit.getHotbar();
