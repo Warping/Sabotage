@@ -27,7 +27,7 @@
 - [ ] teleporter
 - [ ] vegetarian
 - [X] venom
-- [ ] warper
+- [X] warper
 - [ ] speed
 - [ ] bleeder (new)
 - [ ] dwarf

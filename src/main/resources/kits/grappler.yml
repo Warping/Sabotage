@@ -11,9 +11,7 @@ hotbar:
       KNOCKBACK: 1
   '2':
     custom: grappler
-  '3':
-    material: ARROW
-    amount: 1
+  '3': ARROW
 armor:
   boots: DIAMOND_BOOTS
   leggings: CHAINMAIL_LEGGINGS

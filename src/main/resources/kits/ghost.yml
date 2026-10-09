@@ -12,11 +12,6 @@ hotbar:
   '3':
     material: ENDER_PEARL
     amount: 6
-armor:
-  boots: NONE
-  leggings: NONE
-  chestplate: NONE
-  helmet: NONE
 potionEffects:
 - type: invisibility
   amplifier: 1

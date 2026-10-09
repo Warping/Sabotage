@@ -6,7 +6,7 @@ description:
 - Carries spare pressure plates and an arrow for utility.
 hotbar:
   '1':
-    material: STONE_SWORD
+    material: IRON_SWORD
     enchants:
       KNOCKBACK: 2
   '2':
@@ -15,8 +15,8 @@ hotbar:
     material: HEAVY_WEIGHTED_PRESSURE_PLATE
     amount: 4
 armor:
-  boots: COPPER_BOOTS
-  leggings: IRON_LEGGINGS
-  chestplate: IRON_CHESTPLATE
-  helmet: COPPER_HELMET
+  boots: GOLDEN_BOOTS
+  leggings: CHAINMAIL_LEGGINGS
+  chestplate: CHAINMAIL_CHESTPLATE
+  helmet: IRON_HELMET
 potionEffects: []

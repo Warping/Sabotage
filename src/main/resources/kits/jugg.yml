@@ -13,6 +13,6 @@ armor:
   helmet: IRON_HELMET
 potionEffects:
 - type: slowness
-  amplifier: 1
+  amplifier: 0
   duration: -1
   hideParticles: true

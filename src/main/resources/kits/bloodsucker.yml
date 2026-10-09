@@ -1,23 +1,18 @@
-# Kit: Bloodsucker
-# Slot 0 of the hotbar is always the Blaze Powder defuse kit - do not set it here.
 name: bloodsucker
 price: 3
 icon: REDSTONE
 description:
-  - "Gains max health by killing enemies."
-  - "Starts with 8 hearts"
-
+- Gains max health by killing enemies.
+- Starts with 8 hearts
 hotbar:
-  1:
+  '1':
     custom: bloodsucker
-  8:
+  '8':
     material: REDSTONE
     amount: 8
-
 armor:
   boots: IRON_BOOTS
   leggings: IRON_LEGGINGS
   chestplate: IRON_CHESTPLATE
   helmet: IRON_HELMET
-
 potionEffects: []

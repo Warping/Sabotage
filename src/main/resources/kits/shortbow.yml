@@ -8,7 +8,7 @@ hotbar:
   '1':
     material: STONE_SWORD
     enchants:
-      KNOCKBACK: 2
+      KNOCKBACK: 1
   '2':
     material: BOW
     enchants:

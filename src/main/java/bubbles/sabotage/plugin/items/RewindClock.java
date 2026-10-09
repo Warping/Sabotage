@@ -43,7 +43,7 @@ public class RewindClock extends CustomItem {
             @Override
             public void run() {
                 for (Player p : getGame().getWorld().getPlayers()) {
-                    if (!contains(p, item, 1)) {
+                    if (!contains(p, getItem(), 1)) {
                         recentPos.remove(p);
                         continue;
                     }
