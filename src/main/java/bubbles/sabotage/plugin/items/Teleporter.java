@@ -131,7 +131,7 @@ public class Teleporter extends CustomItem {
         teleporterLoc.getBlock().setType(Material.SPAWNER);
         
         p.sendMessage(ChatColor.GREEN + "Teleporter placed. (" + playerTeleporters.get(p).size() + "/" + MAX_TELEPORTERS_PER_PLAYER + ")");
-        p.getWorld().playSound(teleporterLoc, Sound.BLOCK_BEACON_ACTIVATE, 10.0F, 1.0F);
+        p.getWorld().playSound(teleporterLoc, Sound.BLOCK_BEACON_ACTIVATE, 2.0F, 1.5F);
     }
 
     private void removeTeleporter(Player p, Location loc) {
@@ -147,7 +147,7 @@ public class Teleporter extends CustomItem {
         }
         
         give(p, new ItemStack(Material.SPAWNER), 1);
-        p.getWorld().playSound(loc, Sound.BLOCK_BEACON_DEACTIVATE, 10.0F, 1.0F);
+        p.getWorld().playSound(loc, Sound.BLOCK_BEACON_DEACTIVATE, 2.0F, 1.5F);
         p.sendMessage(ChatColor.GREEN + "Teleporter removed.");
     }
 
@@ -217,8 +217,8 @@ public class Teleporter extends CustomItem {
         
         lastTeleportTime.put(p, currentTime);
         
-        p.getWorld().playSound(teleportFromLoc, Sound.ENTITY_ENDERMAN_TELEPORT, 10.0F, 1.0F);
-        p.getWorld().playSound(teleportLoc, Sound.ENTITY_ENDERMAN_TELEPORT, 10.0F, 1.0F);
+        p.getWorld().playSound(teleportFromLoc, Sound.ENTITY_ENDERMAN_TELEPORT, 1.0F, 0.7F);
+        p.getWorld().playSound(teleportLoc, Sound.ENTITY_ENDERMAN_TELEPORT, 1.0F, 0.7F);
         p.sendMessage(ChatColor.GREEN + "Teleported!");
     }
 

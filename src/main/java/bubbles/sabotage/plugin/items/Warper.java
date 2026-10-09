@@ -68,7 +68,7 @@ public class Warper extends CustomItem {
 					if (queue.size() == MAX_WARP_TIME - 1) {
 						getPlugin().getServer().getScheduler().runTaskLater(getPlugin(), () -> {
 							p.sendMessage(ChatColor.GREEN + "You can now Warp!");
-							p.getWorld().playSound(p, Sound.BLOCK_NOTE_BLOCK_HARP, 10, 2);
+							p.getWorld().playSound(p, Sound.BLOCK_NOTE_BLOCK_HARP, 0.5F, 2);
 						}, 20L);
 					}
 				}
@@ -94,7 +94,7 @@ public class Warper extends CustomItem {
 		
 		if (recentPos.get(attacker).size() < MAX_WARP_TIME) {
 			attacker.sendMessage(ChatColor.RED + "Cannot warp this early! Wait " + (MAX_WARP_TIME - recentPos.get(attacker).size()) + " seconds");
-			attacker.getWorld().playSound(attacker, Sound.BLOCK_NOTE_BLOCK_BASS, 10, 1);
+			attacker.getWorld().playSound(attacker, Sound.BLOCK_NOTE_BLOCK_BASS, 0.5F, 1);
 			if (Commands.isDebugMode()) {
 				Main.applog.log(Level.INFO, "[Warper Debug] Warp blocked - insufficient cooldown");
 			}
@@ -104,7 +104,7 @@ public class Warper extends CustomItem {
 		// Check if players are on the same team
 		if (getGame().getTeams().onSameTeam(attacker, victim)) {
 			attacker.sendMessage(ChatColor.RED + "Can't warp teammates!");
-			attacker.getWorld().playSound(attacker, Sound.BLOCK_NOTE_BLOCK_BASS, 10, 1);
+			attacker.getWorld().playSound(attacker, Sound.BLOCK_NOTE_BLOCK_BASS, 0.5F, 1);
 			if (Commands.isDebugMode()) {
 				Main.applog.log(Level.INFO, "[Warper Debug] Warp blocked - same team");
 			}
@@ -116,9 +116,9 @@ public class Warper extends CustomItem {
 		}
 
 		victim.getWorld().spawnParticle(Particle.CRIT, victim.getLocation(), 100, 0.1, 0.5, 0.1, 1);
-		victim.getWorld().playSound(victim, Sound.ENTITY_ENDERMAN_TELEPORT, 10, 1);
+		victim.getWorld().playSound(victim, Sound.ENTITY_ENDERMAN_TELEPORT, 0.5F, 1);
 		victim.teleport(recentPos.get(attacker).peek());
-		victim.getWorld().playSound(victim, Sound.ENTITY_ENDERMAN_TELEPORT, 10, 1);
+		victim.getWorld().playSound(victim, Sound.ENTITY_ENDERMAN_TELEPORT, 0.5F, 1);
 		victim.getWorld().spawnParticle(Particle.CRIT, victim.getLocation(), 100, 0.1, 0.5, 0.1, 1);
 
 		attacker.sendMessage(ChatColor.GREEN + "Warped " + victim.getName() + " to your location from 10 seconds ago!");

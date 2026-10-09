@@ -1,0 +1,23 @@
+name: medic
+price: 0
+icon: GOLDEN_APPLE
+description:
+- Uses a healing wand to heal allies.
+- Carries a handful of golden apples for sustenance.
+hotbar:
+  '1':
+    material: IRON_SWORD
+  '2':
+    custom: healing
+  '3':
+    material: GOLDEN_APPLE
+    amount: 10
+  '4':
+    custom: steak
+    amount: 5
+armor:
+  boots: GOLDEN_BOOTS
+  leggings: GOLDEN_LEGGINGS
+  chestplate: GOLDEN_CHESTPLATE
+  helmet: GOLDEN_HELMET
+potionEffects: []

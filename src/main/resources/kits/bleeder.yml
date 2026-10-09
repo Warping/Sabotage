@@ -1,0 +1,15 @@
+name: bleeder
+price: 3
+icon: NETHER_WART
+description:
+- Carries a barbed weapon for inflicting bleeding damage.
+- Players who are hit will not be able to naturally regenerate health for 10 seconds.
+hotbar:
+  '1':
+    custom: barbed
+armor:
+  boots: IRON_BOOTS
+  leggings: IRON_LEGGINGS
+  chestplate: IRON_CHESTPLATE
+  helmet: IRON_HELMET
+potionEffects: []

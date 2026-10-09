@@ -105,7 +105,7 @@ public class Landmine extends CustomItem {
             landmineLoc.getBlock().setType(Material.HEAVY_WEIGHTED_PRESSURE_PLATE);
         }
         p.sendMessage(ChatColor.GREEN + "Landmine placed.");
-        p.getWorld().playSound(landmineLoc, Sound.BLOCK_BAMBOO_WOOD_PRESSURE_PLATE_CLICK_ON, 10.0F, 0.8F);
+        p.getWorld().playSound(landmineLoc, Sound.BLOCK_BAMBOO_WOOD_PRESSURE_PLATE_CLICK_ON, 0.5F, 0.8F);
 
     }
 
@@ -116,7 +116,7 @@ public class Landmine extends CustomItem {
         loc.getBlock().setType(Material.AIR);
         landmineLocations.remove(loc);
         give(p, new ItemStack(Material.HEAVY_WEIGHTED_PRESSURE_PLATE), 1);
-        p.getWorld().playSound(loc, Sound.BLOCK_BAMBOO_WOOD_PRESSURE_PLATE_CLICK_OFF, 10.0F, 0.7F);
+        p.getWorld().playSound(loc, Sound.BLOCK_BAMBOO_WOOD_PRESSURE_PLATE_CLICK_OFF, 0.5F, 0.7F);
     }
 
     private boolean changeLandmineSkin(Player p) {
@@ -146,11 +146,11 @@ public class Landmine extends CustomItem {
                 return;
             }
             attacker.sendMessage(ChatColor.GREEN + "Your landmine was triggered by " + victim.getName() + "!");
-            attacker.getWorld().playSound(attacker, Sound.BLOCK_NOTE_BLOCK_PLING, 10.0F, 1F);
+            attacker.getWorld().playSound(attacker, Sound.BLOCK_NOTE_BLOCK_PLING, 0.5F, 1F);
             landmineLocations.remove(loc);
             getPlugin().getServer().getScheduler().runTaskLater(getPlugin(), () -> {
                 e.getClickedBlock().setType(Material.AIR);
-                victim.getWorld().playSound(loc, Sound.ENTITY_CREEPER_PRIMED, 10F, 1.2F);
+                victim.getWorld().playSound(loc, Sound.ENTITY_CREEPER_PRIMED, 2.0F, 1.2F);
             }, 1);
             getPlugin().getServer().getScheduler().runTaskLater(getPlugin(), () ->
                 explodeLandmine(loc, attacker), FUSE_DELAY);
@@ -287,7 +287,7 @@ public class Landmine extends CustomItem {
                 Material mat = e.getCurrentItem().getType();
                 landmineSkins.put(p, mat);
                 p.sendMessage(ChatColor.GREEN + "Landmine skin set to " + mat.name() + ".");
-                p.getWorld().playSound(p, Sound.BLOCK_NOTE_BLOCK_PLING, 10.0F, 1F);
+                p.getWorld().playSound(p, Sound.BLOCK_NOTE_BLOCK_PLING, 0.5F, 1F);
                 landMineSkinGUI.closeInventory(e.getWhoClicked());
             }
         }

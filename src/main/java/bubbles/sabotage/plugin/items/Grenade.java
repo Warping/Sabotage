@@ -107,7 +107,7 @@ public class Grenade extends CustomItem {
     private void mainFire(Player shooter, float throwSpeed) {
         reloading.putIfAbsent(shooter, false);
         if (!contains(shooter, new ItemStack(AMMO_TYPE), 1) || reloading.get(shooter)) {
-            shooter.getWorld().playSound(shooter, Sound.BLOCK_STONE_BUTTON_CLICK_OFF, 10.0F, 2.0F);
+            shooter.getWorld().playSound(shooter, Sound.BLOCK_STONE_BUTTON_CLICK_OFF, 0.5F, 2.0F);
             return;
         }
         float speed = throwSpeed;
@@ -121,18 +121,18 @@ public class Grenade extends CustomItem {
     private void mainReload(Player shooter) {
         reloading.putIfAbsent(shooter, false);
         if (contains(shooter, new ItemStack(AMMO_TYPE), MAX_NADES) || reloading.get(shooter)) {
-            shooter.getWorld().playSound(shooter, Sound.BLOCK_STONE_BUTTON_CLICK_OFF, 10.0F, 2.0F);
+            shooter.getWorld().playSound(shooter, Sound.BLOCK_STONE_BUTTON_CLICK_OFF, 0.5F, 2.0F);
             return;
         }
         consumeAll(shooter, new ItemStack(AMMO_TYPE));
-        shooter.getWorld().playSound(shooter, Sound.BLOCK_PISTON_EXTEND, 10F, 1.2F);
+        shooter.getWorld().playSound(shooter, Sound.BLOCK_PISTON_EXTEND, 0.5F, 1.2F);
         reloading.put(shooter, true);
         getPlugin().getServer().getScheduler().runTaskLater(getPlugin(), () -> {
             reloading.putIfAbsent(shooter, false);
             if (reloading.get(shooter)) {
                 reloading.put(shooter, false);
                 give(shooter, new ItemStack(AMMO_TYPE), MAX_NADES);
-                shooter.getWorld().playSound(shooter, Sound.BLOCK_PISTON_CONTRACT, 10F, 1.2F);
+                shooter.getWorld().playSound(shooter, Sound.BLOCK_PISTON_CONTRACT, 0.5F, 1.2F);
             }
         }, RELOAD_DELAY);
     }
@@ -150,7 +150,7 @@ public class Grenade extends CustomItem {
     }
 
     private void throwGrenade(Player shooter, ItemStack item, float vel) {
-        shooter.getWorld().playSound(shooter, Sound.ENTITY_COW_STEP, 10F, 1.7F);
+        shooter.getWorld().playSound(shooter, Sound.ENTITY_COW_STEP, 1.0F, 1.7F);
         Item grenade = shooter.getWorld().dropItem(shooter.getEyeLocation(), item);
         grenade.setPickupDelay(1000);
         grenade.setVelocity(shooter.getLocation().getDirection().multiply(vel));

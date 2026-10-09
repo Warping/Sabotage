@@ -57,7 +57,7 @@ public class RewindClock extends CustomItem {
                     if (queue.size() == MAX_REWIND_TIME - 1) {
                         getPlugin().getServer().getScheduler().runTaskLater(getPlugin(), () -> {
                             p.sendMessage(ChatColor.GREEN + "You can now Rewind!");
-                            p.getWorld().playSound(p, Sound.BLOCK_NOTE_BLOCK_HARP, 10, 2);
+                            p.getWorld().playSound(p, Sound.BLOCK_NOTE_BLOCK_HARP, 0.5F, 2);
                         }, 20L);
                     }
                 }
@@ -69,13 +69,13 @@ public class RewindClock extends CustomItem {
         if(recentPos.get(player)==null) return;
         if(recentPos.get(player).size() < MAX_REWIND_TIME) {
             player.sendMessage(ChatColor.RED + "Cannot go back this early! Wait " + (MAX_REWIND_TIME - recentPos.get(player).size()) + " seconds");
-            player.getWorld().playSound(player, Sound.BLOCK_NOTE_BLOCK_BASS, 10, 1);
+            player.getWorld().playSound(player, Sound.BLOCK_NOTE_BLOCK_BASS, 0.5F, 1);
             return;
         }
         player.getWorld().spawnParticle(Particle.CRIT, player.getLocation(), 100, 0.1, 0.5, 0.1, 1);
-        player.getWorld().playSound(player,Sound.ENTITY_ENDERMAN_TELEPORT, 10, 1);
+        player.getWorld().playSound(player,Sound.ENTITY_ENDERMAN_TELEPORT, 0.5F, 1);
         player.teleport(recentPos.get(player).poll());
-        player.getWorld().playSound(player,Sound.ENTITY_ENDERMAN_TELEPORT, 10, 1);
+        player.getWorld().playSound(player,Sound.ENTITY_ENDERMAN_TELEPORT, 0.5F, 1);
         player.getWorld().spawnParticle(Particle.CRIT, player.getLocation(), 100, 0.1, 0.5, 0.1, 1);
         recentPos.remove(player);
     }

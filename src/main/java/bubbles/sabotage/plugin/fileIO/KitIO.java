@@ -383,6 +383,7 @@ public final class KitIO {
 
 		Map<String, Object> enchantMap = null;
 		boolean unbreakable = false;
+		String potionType = null;
 		if (item.hasItemMeta()) {
 			ItemMeta meta = item.getItemMeta();
 			if (meta.hasEnchants()) {
@@ -392,9 +393,15 @@ public final class KitIO {
 				}
 			}
 			unbreakable = meta.isUnbreakable();
+			if (meta instanceof org.bukkit.inventory.meta.PotionMeta) {
+				org.bukkit.potion.PotionType type = ((org.bukkit.inventory.meta.PotionMeta) meta).getBasePotionType();
+				if (type != null) {
+					potionType = type.name();
+				}
+			}
 		}
 
-		if (enchantMap == null && !unbreakable && item.getAmount() == 1) {
+		if (enchantMap == null && !unbreakable && potionType == null && item.getAmount() == 1) {
 			return item.getType().name();
 		}
 
@@ -402,6 +409,9 @@ public final class KitIO {
 		spec.put("material", item.getType().name());
 		if (item.getAmount() != 1) {
 			spec.put("amount", item.getAmount());
+		}
+		if (potionType != null) {
+			spec.put("potion_type", potionType);
 		}
 		if (enchantMap != null && !enchantMap.isEmpty()) {
 			spec.put("enchants", enchantMap);

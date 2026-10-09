@@ -24,7 +24,7 @@
 - [ ] glass (new)
 - [X] ninja
 - [ ] medic
-- [ ] teleporter
+- [X] teleporter
 - [ ] vegetarian
 - [X] venom
 - [X] warper
