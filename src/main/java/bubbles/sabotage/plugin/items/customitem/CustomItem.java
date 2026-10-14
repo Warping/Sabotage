@@ -1,6 +1,9 @@
 package bubbles.sabotage.plugin.items.customitem;
 
 
+import org.bukkit.plugin.java.JavaPlugin;
+import org.checkerframework.checker.nullness.qual.NonNull;
+
 import bubbles.sabotage.plugin.Commands;
 import bubbles.sabotage.plugin.Main;
 import bubbles.sabotage.plugin.game.Game;
@@ -29,7 +32,7 @@ public abstract class CustomItem implements Listener {
 
 	private Level LOG_LEVEL = Level.INFO;
 	private ItemStack customItem;
-	private Main plugin = Main.getPlugin(Main.class);
+	private Main plugin = JavaPlugin.getPlugin(Main.class);
 	// Tag written into every custom item's PersistentDataContainer so the plugin can
 	// still recognize it after its ItemMeta (enchants, lore, name, etc.) is modified in-place.
 	private final NamespacedKey idKey = new NamespacedKey(plugin, "custom_item_id");
@@ -58,7 +61,17 @@ public abstract class CustomItem implements Listener {
 		if (item == null || item.getType() == Material.AIR || !item.hasItemMeta()) {
 			return false;
 		}
-		String id = item.getItemMeta().getPersistentDataContainer().get(idKey, PersistentDataType.STRING);
+		NamespacedKey key = idKey;
+		if (key == null) {
+			applog.log(LOG_LEVEL, "[DEBUG] isCustomItem: idKey is null");
+			return false;
+		}
+		@NonNull PersistentDataType<String, String> stringType = PersistentDataType.STRING;
+		if (stringType == null) {
+			applog.log(LOG_LEVEL, "[DEBUG] isCustomItem: stringType is null");
+			return false;
+		}
+		String id = item.getItemMeta().getPersistentDataContainer().get(key, stringType);
 		return getItemId().equals(id);
 	}
 	
@@ -172,7 +185,17 @@ public abstract class CustomItem implements Listener {
 		ItemStack stamped = item.clone();
 		stamped.setAmount(1);
 		ItemMeta meta = stamped.getItemMeta();
-		meta.getPersistentDataContainer().set(idKey, PersistentDataType.STRING, getItemId());
+		@NonNull NamespacedKey key = idKey;
+		if (key == null) {
+			applog.log(LOG_LEVEL, "[DEBUG] setItem: idKey is null");
+			return;
+		}
+		@NonNull PersistentDataType<String, String> stringType = PersistentDataType.STRING;
+		if (stringType == null) {
+			applog.log(LOG_LEVEL, "[DEBUG] setItem: stringType is null");
+			return;
+		}
+		meta.getPersistentDataContainer().set(key, stringType, getItemId());
 		stamped.setItemMeta(meta);
 		customItem = stamped;
 	}
@@ -215,6 +238,8 @@ public abstract class CustomItem implements Listener {
 					if (Commands.isDebugMode()) applog.log(LOG_LEVEL, tag + "Right Click Block! OffHand");
 					onRightClickBlock(e, false);
 				}
+				break;
+			case PHYSICAL:
 				break;
 			}
 		}

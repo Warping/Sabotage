@@ -2,7 +2,7 @@ package bubbles.sabotage.plugin.items;
 
 import bubbles.sabotage.plugin.items.customitem.CustomItem;
 import bubbles.sabotage.plugin.util.Text;
-import org.bukkit.ChatColor;
+import net.md_5.bungee.api.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.damage.DamageSource;
 import org.bukkit.damage.DamageType;
@@ -14,10 +14,13 @@ import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.logging.Level;
+import static bubbles.sabotage.plugin.Main.applog;
 
 public class Rifle extends CustomItem {
     
@@ -99,7 +102,12 @@ public class Rifle extends CustomItem {
         }
 
         //Play hit sound
-        shooter.getWorld().playSound(shooter.getLocation(), Sound.ENTITY_ARROW_HIT_PLAYER, 0.1f, 0.5f);
+        @NonNull Sound entityArrowHitPlayer = Sound.ENTITY_ARROW_HIT_PLAYER;
+        if (entityArrowHitPlayer != null) {
+            shooter.getWorld().playSound(shooter.getLocation(), entityArrowHitPlayer, 0.1f, 0.5f);
+        } else {
+            applog.log(Level.WARNING, "Sound ENTITY_ARROW_HIT_PLAYER is null!");
+        }
 
         DamageSource source = DamageSource.builder(DamageType.ARROW)
             .withCausingEntity(shooter) // Explicitly attributes credit for the hit to the shooter

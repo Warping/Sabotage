@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-import org.bukkit.ChatColor;
+import net.md_5.bungee.api.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -22,7 +22,7 @@ import bubbles.sabotage.plugin.util.Text;
 
 public class GlassShard extends CustomItem {
 	
-	private HashMap<Player, Boolean> activated = new HashMap<Player, Boolean>();
+	private HashMap<Player, Boolean> activated = new HashMap<>();
 	
 	public GlassShard() {
 		super();

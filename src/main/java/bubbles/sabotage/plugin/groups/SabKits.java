@@ -16,7 +16,7 @@ public class SabKits {
 	public SabKits(Main _plugin) {
 		this.plugin = _plugin;
 		this.kitGUI = new GUI(plugin, ChatColor.DARK_PURPLE + "Kits");
-		this.kits = new ArrayList<Kit>();
+		this.kits = new ArrayList<>();
 	}
 
 	public void addKit(Kit kit) {

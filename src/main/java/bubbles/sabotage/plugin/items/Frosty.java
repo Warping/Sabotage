@@ -3,12 +3,13 @@ package bubbles.sabotage.plugin.items;
 import bubbles.sabotage.plugin.SabotageBootstrap;
 import bubbles.sabotage.plugin.items.customitem.CustomItem;
 import bubbles.sabotage.plugin.util.Text;
-import org.bukkit.ChatColor;
+import net.md_5.bungee.api.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Particle;
-import org.bukkit.Registry;
+import io.papermc.paper.registry.RegistryAccess;
+import io.papermc.paper.registry.RegistryKey;
 import org.bukkit.World;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.enchantments.Enchantment;
@@ -61,6 +62,9 @@ public class Frosty extends CustomItem {
 
 		ItemStack item = new ItemStack(Material.IRON_SWORD);
 		ItemMeta im = item.getItemMeta();
+		if (im == null) {
+			throw new IllegalStateException("Could not create item meta for " + Material.IRON_SWORD);
+		}
 
 		im.addEnchant(frostBiteEnchantment(), 1, true);
 		im.displayName(Text.of(ChatColor.AQUA + "Frosty"));
@@ -71,7 +75,15 @@ public class Frosty extends CustomItem {
 	}
 
 	private static Enchantment frostBiteEnchantment() {
-		return Registry.ENCHANTMENT.get(NamespacedKey.fromString(SabotageBootstrap.FROST_BITE_KEY));
+		NamespacedKey key = NamespacedKey.fromString(SabotageBootstrap.FROST_BITE_KEY);
+		if (key == null) {
+			throw new IllegalStateException("Invalid enchantment key: " + SabotageBootstrap.FROST_BITE_KEY);
+		}
+		Enchantment enchantment = RegistryAccess.registryAccess().getRegistry(RegistryKey.ENCHANTMENT).get(key);
+		if (enchantment == null) {
+			throw new IllegalStateException("Enchantment is not registered: " + SabotageBootstrap.FROST_BITE_KEY);
+		}
+		return enchantment;
 	}
 
 	private List<String> buildLore() {

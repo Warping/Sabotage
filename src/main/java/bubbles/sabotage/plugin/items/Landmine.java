@@ -4,6 +4,7 @@ import bubbles.sabotage.plugin.Commands;
 import bubbles.sabotage.plugin.GUI;
 import bubbles.sabotage.plugin.items.customitem.CustomItem;
 import bubbles.sabotage.plugin.util.Blocks;
+import bubbles.sabotage.plugin.util.Health;
 import bubbles.sabotage.plugin.util.Text;
 import net.md_5.bungee.api.ChatColor;
 import org.bukkit.Location;
@@ -23,11 +24,13 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.damage.DamageSource;
 import org.bukkit.damage.DamageType;
+import org.checkerframework.checker.nullness.qual.NonNull;
 import bubbles.sabotage.plugin.Main;
 import java.util.logging.Level;
 
 
 import java.util.*;
+import static bubbles.sabotage.plugin.Main.applog;
 
 public class Landmine extends CustomItem {
 
@@ -53,9 +56,9 @@ public class Landmine extends CustomItem {
         im.displayName(Text.of(ChatColor.RED + "Landmine Arming Tool"));
 
         List<String> lore = new ArrayList<>();
-        lore.add(org.bukkit.ChatColor.GOLD + "Right Click to Place Mine.");
-        lore.add(org.bukkit.ChatColor.GOLD + "Sneak Right Click to Change Mine Appearance.");
-        lore.add(org.bukkit.ChatColor.GOLD + "Left Click to Pick Up Mine.");
+        lore.add(ChatColor.GOLD + "Right Click to Place Mine.");
+        lore.add(ChatColor.GOLD + "Sneak Right Click to Change Mine Appearance.");
+        lore.add(ChatColor.GOLD + "Left Click to Pick Up Mine.");
         im.lore(Text.of(lore));
         item.setItemMeta(im);
         setItem(item);
@@ -105,7 +108,12 @@ public class Landmine extends CustomItem {
             landmineLoc.getBlock().setType(Material.HEAVY_WEIGHTED_PRESSURE_PLATE);
         }
         p.sendMessage(ChatColor.GREEN + "Landmine placed.");
-        p.getWorld().playSound(landmineLoc, Sound.BLOCK_BAMBOO_WOOD_PRESSURE_PLATE_CLICK_ON, 0.5F, 0.8F);
+        @NonNull Sound blockBambooWoodPressurePlateClickOn = Sound.BLOCK_BAMBOO_WOOD_PRESSURE_PLATE_CLICK_ON;
+        if (blockBambooWoodPressurePlateClickOn != null) {
+            p.getWorld().playSound(landmineLoc, blockBambooWoodPressurePlateClickOn, 0.5F, 0.8F);
+        } else {
+            applog.log(Level.WARNING, "Sound BLOCK_BAMBOO_WOOD_PRESSURE_PLATE_CLICK_ON is null!");
+        }
 
     }
 
@@ -116,7 +124,12 @@ public class Landmine extends CustomItem {
         loc.getBlock().setType(Material.AIR);
         landmineLocations.remove(loc);
         give(p, new ItemStack(Material.HEAVY_WEIGHTED_PRESSURE_PLATE), 1);
-        p.getWorld().playSound(loc, Sound.BLOCK_BAMBOO_WOOD_PRESSURE_PLATE_CLICK_OFF, 0.5F, 0.7F);
+        @NonNull Sound blockBambooWoodPressurePlateClickOff = Sound.BLOCK_BAMBOO_WOOD_PRESSURE_PLATE_CLICK_OFF;
+        if (blockBambooWoodPressurePlateClickOff != null) {
+            p.getWorld().playSound(loc, blockBambooWoodPressurePlateClickOff, 0.5F, 0.7F);
+        } else {
+            applog.log(Level.WARNING, "Sound BLOCK_BAMBOO_WOOD_PRESSURE_PLATE_CLICK_OFF is null!");
+        }
     }
 
     private boolean changeLandmineSkin(Player p) {
@@ -146,11 +159,21 @@ public class Landmine extends CustomItem {
                 return;
             }
             attacker.sendMessage(ChatColor.GREEN + "Your landmine was triggered by " + victim.getName() + "!");
-            attacker.getWorld().playSound(attacker, Sound.BLOCK_NOTE_BLOCK_PLING, 0.5F, 1F);
+            @NonNull Sound blockNoteBlockPling = Sound.BLOCK_NOTE_BLOCK_PLING;
+            if (blockNoteBlockPling != null) {
+                attacker.getWorld().playSound(attacker, blockNoteBlockPling, 0.5F, 1F);
+            } else {
+                applog.log(Level.WARNING, "Sound BLOCK_NOTE_BLOCK_PLING is null!");
+            }
             landmineLocations.remove(loc);
             getPlugin().getServer().getScheduler().runTaskLater(getPlugin(), () -> {
                 e.getClickedBlock().setType(Material.AIR);
-                victim.getWorld().playSound(loc, Sound.ENTITY_CREEPER_PRIMED, 2.0F, 1.2F);
+                @NonNull Sound entityCreeperPrimed = Sound.ENTITY_CREEPER_PRIMED;
+                if (entityCreeperPrimed != null) {
+                    victim.getWorld().playSound(loc, entityCreeperPrimed, 2.0F, 1.2F);
+                } else {
+                    applog.log(Level.WARNING, "Sound ENTITY_CREEPER_PRIMED is null!");
+                }
             }, 1);
             getPlugin().getServer().getScheduler().runTaskLater(getPlugin(), () ->
                 explodeLandmine(loc, attacker), FUSE_DELAY);
@@ -250,7 +273,7 @@ public class Landmine extends CustomItem {
             if (damageSource != null) {
                 if (DEBUG) {
                     Main.applog.log(Level.INFO, "[Landmine Debug] Applying " + damage + " damage to " + victim.getName());
-                    Main.applog.log(Level.INFO, "[Landmine Debug] Before damage - Health: " + victim.getHealth() + ", MaxHealth: " + victim.getMaxHealth());
+                    Main.applog.log(Level.INFO, "[Landmine Debug] Before damage - Health: " + victim.getHealth() + ", MaxHealth: " + Health.getMax(victim));
                 }
                 
                 // For self-damage, mark it and use simple damage() so the event fires properly
@@ -287,7 +310,12 @@ public class Landmine extends CustomItem {
                 Material mat = e.getCurrentItem().getType();
                 landmineSkins.put(p, mat);
                 p.sendMessage(ChatColor.GREEN + "Landmine skin set to " + mat.name() + ".");
-                p.getWorld().playSound(p, Sound.BLOCK_NOTE_BLOCK_PLING, 0.5F, 1F);
+                @NonNull Sound blockNoteBlockPling2 = Sound.BLOCK_NOTE_BLOCK_PLING;
+                if (blockNoteBlockPling2 != null) {
+                    p.getWorld().playSound(p, blockNoteBlockPling2, 0.5F, 1F);
+                } else {
+                    applog.log(Level.WARNING, "Sound BLOCK_NOTE_BLOCK_PLING is null!");
+                }
                 landMineSkinGUI.closeInventory(e.getWhoClicked());
             }
         }

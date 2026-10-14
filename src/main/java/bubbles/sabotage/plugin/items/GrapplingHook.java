@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-import org.bukkit.ChatColor;
+import net.md_5.bungee.api.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -12,7 +12,6 @@ import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Arrow;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
@@ -25,9 +24,9 @@ import org.bukkit.util.Vector;
 import bubbles.sabotage.plugin.items.customitem.CustomItem;
 import bubbles.sabotage.plugin.util.Text;
 
-public class GrapplingHook extends CustomItem implements Listener {
+public class GrapplingHook extends CustomItem {
 	
-	private HashMap<Player, Boolean> grappled = new HashMap<Player, Boolean>();
+	private HashMap<Player, Boolean> grappled = new HashMap<>();
 	private final double GRAPPLE_MULTIPLIER = 0.12;
 	
 	public GrapplingHook() {

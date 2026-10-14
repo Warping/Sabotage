@@ -1,6 +1,7 @@
 package bubbles.sabotage.plugin;
 
 import bubbles.sabotage.plugin.fileIO.EditModeIO;
+import static bubbles.sabotage.plugin.Main.applog;
 import org.bukkit.GameMode;
 import org.bukkit.Material;
 import org.bukkit.attribute.Attribute;
@@ -15,6 +16,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.logging.Level;
 
 /**
  * Lets an admin temporarily switch into Creative mode to edit the map (place/break blocks,
@@ -86,18 +88,18 @@ public final class EditMode {
 			// Player was in creative/edit mode - restore to edit mode
 			// Use the survival state as the "previousState" they'll return to when exiting edit mode
 			if (savedSurvivalState != null) {
-				logInventory(p, "JOIN - Loading survival state as previousState", (List<?>) savedSurvivalState.get("contents"));
-				activeSessions.put(p.getUniqueId(), createSnapshotFromMap(p, savedSurvivalState));
+				logInventory("JOIN - Loading survival state as previousState", (List<?>) savedSurvivalState.get("contents"));
+				activeSessions.put(p.getUniqueId(), createSnapshotFromMap(savedSurvivalState));
 				debugLog("JOIN: Saved survival state to activeSessions as previousState");
 			} else {
 				activeSessions.put(p.getUniqueId(), Snapshot.capture(p));
 				debugLog("JOIN: No survival state, using current player state as previousState");
 			}
 			if (savedCreativeState != null) {
-				logInventory(p, "JOIN - Loading creative state", (List<?>) savedCreativeState.get("contents"));
+				logInventory("JOIN - Loading creative state", (List<?>) savedCreativeState.get("contents"));
 				EditModeIO.restoreInventoryState(p, savedCreativeState);
 				Snapshot afterRestore = Snapshot.capture(p);
-				logInventory(p, "JOIN - After restoring creative state", afterRestore.contents);
+				logInventory("JOIN - After restoring creative state", afterRestore.contents);
 			} else {
 				debugLog("JOIN: No creative state saved");
 			}
@@ -110,10 +112,10 @@ public final class EditMode {
 			debugLog("JOIN: Restoring to SURVIVAL mode");
 			// Player was in survival mode - restore to survival
 			if (savedSurvivalState != null) {
-				logInventory(p, "JOIN - Loading survival state", (List<?>) savedSurvivalState.get("contents"));
+				logInventory("JOIN - Loading survival state", (List<?>) savedSurvivalState.get("contents"));
 				EditModeIO.restoreInventoryState(p, savedSurvivalState);
 				Snapshot afterRestore = Snapshot.capture(p);
-				logInventory(p, "JOIN - After restoring survival state", afterRestore.contents);
+				logInventory("JOIN - After restoring survival state", afterRestore.contents);
 				p.sendMessage("\u00A7aYour inventory has been restored from your last session.");
 			}
 		}
@@ -123,7 +125,7 @@ public final class EditMode {
 	 * Creates a Snapshot from a loaded state map (used for login restoration).
 	 * This snapshot can be restored later when exiting edit mode.
 	 */
-	private Snapshot createSnapshotFromMap(Player p, Map<String, Object> state) {
+	private Snapshot createSnapshotFromMap(Map<String, Object> state) {
 		@SuppressWarnings("unchecked")
 		List<ItemStack> contents = (List<ItemStack>) state.get("contents");
 		@SuppressWarnings("unchecked")
@@ -167,7 +169,7 @@ public final class EditMode {
 		Snapshot snapshot = Snapshot.capture(p);
 		activeSessions.put(p.getUniqueId(), snapshot);
 		
-		logInventory(p, "ENTER EDIT MODE - Saving survival inventory", snapshot.contents);
+		logInventory("ENTER EDIT MODE - Saving survival inventory", snapshot.contents);
 		
 		// Save the survival state to disk
 		EditModeIO.saveInventoryState(p,
@@ -190,13 +192,13 @@ public final class EditMode {
 		// Try to load saved creative state from disk
 		Map<String, Object> savedState = EditModeIO.loadInventoryState(p, GameMode.CREATIVE);
 		if (savedState != null) {
-			logInventory(p, "ENTER EDIT MODE - Loading creative inventory from disk", (List<?>) savedState.get("contents"));
+			logInventory("ENTER EDIT MODE - Loading creative inventory from disk", (List<?>) savedState.get("contents"));
 			EditModeIO.restoreInventoryState(p, savedState);
 			Snapshot afterRestore = Snapshot.capture(p);
-			logInventory(p, "ENTER EDIT MODE - After restoring creative from disk", afterRestore.contents);
+			logInventory("ENTER EDIT MODE - After restoring creative from disk", afterRestore.contents);
 		} else {
 			// First time entering edit mode - provide blank creative inventory
-			logInventory(p, "ENTER EDIT MODE - First time, creating blank creative inventory", new ItemStack[0]);
+			logInventory("ENTER EDIT MODE - First time, creating blank creative inventory", new ItemStack[0]);
 			PlayerInventory inv = p.getInventory();
 			inv.clear();
 			inv.setArmorContents(new ItemStack[4]);
@@ -217,7 +219,7 @@ public final class EditMode {
 		
 		// Now update the currentMode flag to CREATIVE
 		Snapshot currentCreativeState = Snapshot.capture(p);
-		logInventory(p, "ENTER EDIT MODE - About to save currentMode=CREATIVE with inventory", currentCreativeState.contents);
+		logInventory("ENTER EDIT MODE - About to save currentMode=CREATIVE with inventory", currentCreativeState.contents);
 		EditModeIO.saveInventoryState(p,
 				currentCreativeState.contents,
 				currentCreativeState.armor,
@@ -241,7 +243,7 @@ public final class EditMode {
 	private void exit(Player p) {
 		Snapshot currentSnapshot = Snapshot.capture(p);
 		
-		logInventory(p, "EXIT EDIT MODE - Current creative inventory", currentSnapshot.contents);
+		logInventory("EXIT EDIT MODE - Current creative inventory", currentSnapshot.contents);
 		
 		// Save the creative mode inventory to disk
 		EditModeIO.saveInventoryState(p,
@@ -267,7 +269,7 @@ public final class EditMode {
 			return;
 		}
 		
-		logInventory(p, "EXIT EDIT MODE - Previous survival inventory", previousState.contents);
+		logInventory("EXIT EDIT MODE - Previous survival inventory", previousState.contents);
 		
 		// Save the survival mode inventory to disk with SURVIVAL gameMode
 		// (this tells us on login that the player was in survival mode)
@@ -359,13 +361,17 @@ public final class EditMode {
 			p.setSaturation(saturation);
 			p.setExp(exp);
 			p.setLevel(level);
-			p.setGameMode(gameMode);
+			if (gameMode != null) {
+				p.setGameMode(gameMode);
+			} else {
+				applog.log(Level.WARNING, "GameMode is null, cannot restore player's game mode!");
+			}
 			p.setAllowFlight(allowFlight);
 			p.setFlying(flying);
 		}
 	}
 
-	private void logInventory(Player p, String context, ItemStack[] items) {
+	private void logInventory(String context, ItemStack[] items) {
 		if (!debugMode) {
 			return;
 		}
@@ -387,7 +393,7 @@ public final class EditMode {
 		System.out.println(sb.toString());
 	}
 
-	private void logInventory(Player p, String context, List<?> items) {
+	private void logInventory(String context, List<?> items) {
 		if (!debugMode) {
 			return;
 		}
@@ -402,7 +408,7 @@ public final class EditMode {
 			Object item = items.get(i);
 			if (item instanceof ItemStack) {
 				ItemStack stack = (ItemStack) item;
-				if (stack != null && stack.getType() != Material.AIR) {
+				if (stack.getType() != Material.AIR) {
 					if (count > 0) sb.append(", ");
 					sb.append("[").append(i).append("]").append(stack.getType()).append("x").append(stack.getAmount());
 					count++;
@@ -423,7 +429,7 @@ public final class EditMode {
 		}
 
 		Snapshot current = Snapshot.capture(p);
-		logInventory(p, "AUTO-SAVE CREATIVE - Saving current inventory", current.contents);
+		logInventory("AUTO-SAVE CREATIVE - Saving current inventory", current.contents);
 		
 		EditModeIO.saveInventoryState(p,
 				current.contents,

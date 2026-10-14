@@ -1,5 +1,6 @@
 package bubbles.sabotage.plugin.game;
 
+import org.bukkit.plugin.java.JavaPlugin;
 import bubbles.sabotage.plugin.Bomb;
 import bubbles.sabotage.plugin.BombBoard;
 import bubbles.sabotage.plugin.Commands;
@@ -12,6 +13,7 @@ import bubbles.sabotage.plugin.groups.SabKits;
 import bubbles.sabotage.plugin.groups.SabTeams;
 import bubbles.sabotage.plugin.items.customitem.CustomItem;
 import bubbles.sabotage.plugin.listeners.GameListener;
+import bubbles.sabotage.plugin.util.Health;
 import bubbles.sabotage.plugin.util.Text;
 import net.md_5.bungee.api.ChatColor;
 import org.bukkit.*;
@@ -33,20 +35,20 @@ import static bubbles.sabotage.plugin.Main.applog;
 @SerializableAs("Game")
 public class Game implements ConfigurationSerializable {
 	
-	private Main plugin = Main.getPlugin(Main.class);
+	private Main plugin = JavaPlugin.getPlugin(Main.class);
 	
 	private String name; //Name of Game
 	private World world; //World where game takes place
-	private HashMap<Player, String> playerKits = new HashMap<Player, String>(); //Players and their selected kit
-	private HashMap<Player, Boolean> playerStatus = new HashMap<Player, Boolean>();
-	private HashMap<Player, Counter> deathCounters = new HashMap<Player, Counter>(); //Pending respawn timers, so stop() can cancel them
-	private HashMap<Player, Location> deathLocations = new HashMap<Player, Location>(); //Store player death locations
-	private HashMap<Player, Integer> kills = new HashMap<Player, Integer>(); //Kills since each player's last death
-	private ArrayList<Bomb> bombs = new ArrayList<Bomb>(); //Bombs in game
-	private ArrayList<String> teamNames = new ArrayList<String>(); //Team names
+	private HashMap<Player, String> playerKits = new HashMap<>(); //Players and their selected kit
+	private HashMap<Player, Boolean> playerStatus = new HashMap<>();
+	private HashMap<Player, Counter> deathCounters = new HashMap<>(); //Pending respawn timers, so stop() can cancel them
+	private HashMap<Player, Location> deathLocations = new HashMap<>(); //Store player death locations
+	private HashMap<Player, Integer> kills = new HashMap<>(); //Kills since each player's last death
+	private ArrayList<Bomb> bombs = new ArrayList<>(); //Bombs in game
+	private ArrayList<String> teamNames = new ArrayList<>(); //Team names
 	private SabTeams teams = new SabTeams(); //Teams available
 	private SabKits kits = new SabKits(plugin); //Kits available
-	private ArrayList<Location> teamLocs = new ArrayList<Location>(); //Team Locations
+	private ArrayList<Location> teamLocs = new ArrayList<>(); //Team Locations
 	private boolean active = false; //Game has started?
 	private boolean autoBalance = true; //AutoBalance toggle
 	@SuppressWarnings("unused")
@@ -63,14 +65,17 @@ public class Game implements ConfigurationSerializable {
 		this.world = plugin.getServer().getWorld(world);
 	}
 	
-	@SuppressWarnings("unchecked")
 	public Game(Map<String, Object> map) {
-		this.plugin = Main.getPlugin(Main.class);
+		this.plugin = JavaPlugin.getPlugin(Main.class);
 		this.name = (String) map.get("Name");
 		String _world = (String) map.get("World");
 		this.world = plugin.getServer().getWorld(_world);
-		this.teamNames = (ArrayList<String>) map.get("Teams");
-		this.teamLocs  = (ArrayList<Location>) map.get("Team Spawns");
+		@SuppressWarnings("unchecked")
+		ArrayList<String> names = (ArrayList<String>) map.get("Teams");
+		this.teamNames = names;
+		@SuppressWarnings("unchecked")
+		ArrayList<Location> spawns = (ArrayList<Location>) map.get("Team Spawns");
+		this.teamLocs  = spawns;
 	}
 
 	@Override
@@ -91,11 +96,11 @@ public class Game implements ConfigurationSerializable {
 	
 	public void setup() {
 		applog.log(LOG_LEVEL, "Updating Gamerules...");
-		world.setGameRule(GameRule.DO_IMMEDIATE_RESPAWN, true);
-		world.setGameRule(GameRule.DO_MOB_LOOT, false);
-		world.setGameRule(GameRule.DO_MOB_SPAWNING, false);
-		world.setGameRule(GameRule.DO_FIRE_TICK, false);
-		world.setGameRule(GameRule.DO_TILE_DROPS, false);
+		world.setGameRule(GameRules.IMMEDIATE_RESPAWN, true);
+		world.setGameRule(GameRules.MOB_DROPS, false);
+		world.setGameRule(GameRules.SPAWN_MOBS, false);
+		world.setGameRule(GameRules.FIRE_SPREAD_RADIUS_AROUND_PLAYER, 0);
+		world.setGameRule(GameRules.BLOCK_DROPS, false);
 		world.setDifficulty(Difficulty.HARD);
 		applog.log(LOG_LEVEL,"Establishing Listener...");
 		listen = new GameListener(this);
@@ -146,7 +151,7 @@ public class Game implements ConfigurationSerializable {
 	
 	public void stop() {
 		active = false;
-		playerKits = new HashMap<Player, String>();
+		playerKits = new HashMap<>();
 		for (Counter counter : deathCounters.values()) {
 			counter.cancel();
 		}
@@ -155,6 +160,9 @@ public class Game implements ConfigurationSerializable {
 		hideKillTablist();
 		Location worldSpawn = world != null ? world.getSpawnLocation() : null;
 		for (Player p : plugin.getServer().getOnlinePlayers()) {
+			if (p == null) {
+				continue;
+			}
 			spectator(p);
 			showPlayer(p);
 			if (worldSpawn != null) {
@@ -178,16 +186,17 @@ public class Game implements ConfigurationSerializable {
 		if (!active) {
 			return;
 		}
-		HashMap<Team, Integer> explosions = new HashMap<Team, Integer>();
+		HashMap<Team, Integer> explosions = new HashMap<>();
 		for (Bomb bomb : bombs) {
 			if (!bomb.isExploded()) {
 				return;
 			}
-			explosions.merge(bomb.getExplodedBy(), 1, Integer::sum);
+			Team explodedBy = bomb.getExplodedBy();
+			explosions.put(explodedBy, explosions.getOrDefault(explodedBy, 0) + 1);
 		}
 		explosions.remove(null);
 		int most = Collections.max(explosions.values());
-		List<Team> leaders = new ArrayList<Team>();
+		List<Team> leaders = new ArrayList<>();
 		for (Map.Entry<Team, Integer> entry : explosions.entrySet()) {
 			if (entry.getValue() == most) {
 				leaders.add(entry.getKey());
@@ -238,7 +247,8 @@ public class Game implements ConfigurationSerializable {
 	}
 
 	public void recordKill(Player attacker) {
-		int count = kills.merge(attacker, 1, Integer::sum);
+		int count = kills.getOrDefault(attacker, 0) + 1;
+		kills.put(attacker, count);
 		updateKillTablist(attacker);
 		if (count % KILLS_PER_FLARE == 0) {
 			plugin.getItems().get("flare").give(attacker, 1);
@@ -258,7 +268,7 @@ public class Game implements ConfigurationSerializable {
 			p.removePotionEffect(potion.getType());
 		}
 		//p.setHealth(p.getAttribute(Attribute.GENERIC_MAX_HEALTH).getDefaultValue());
-		p.setMaxHealth(20);
+		Health.setMax(p, 20);
 		p.setHealth(20);
 		p.setFoodLevel(20);
 		p.setExp(0);
@@ -399,6 +409,9 @@ public class Game implements ConfigurationSerializable {
 		Queue<String> noTeamPlayers = new LinkedList<>();
 		Set<String> teamPlayers = teams.getTeamPlayers();
 		for (Player p : plugin.getServer().getOnlinePlayers()) {
+			if (p == null) {
+				continue;
+			}
 			if (!teamPlayers.contains(p.getName())) {
 				noTeamPlayers.add(p.getName());
 			}
@@ -438,20 +451,36 @@ public class Game implements ConfigurationSerializable {
 	}
 	
 	public void hidePlayer(Player p) {
+		if (p == null) {
+			if (Commands.isDebugMode()) applog.log(LOG_LEVEL, "[DEBUG] hidePlayer: player is null");
+			return;
+		}
 		if (Commands.isDebugMode()) applog.log(LOG_LEVEL, "[DEBUG] hidePlayer: hiding " + p.getName() + " from all online players");
 		for (Player player : plugin.getServer().getOnlinePlayers()) {
-			if (player.equals(p)) {
+			if (player == null || player.equals(p)) {
 				continue;
+			}
+			if (plugin == null) {
+				applog.log(LOG_LEVEL, "[DEBUG] hidePlayer: plugin is null, cannot hide player " + p.getName());
+				return; 
 			}
 			player.hidePlayer(plugin, p);
 		}
 	}
 	
 	public void showPlayer(Player p) {
+		if (p == null) {
+			if (Commands.isDebugMode()) applog.log(LOG_LEVEL, "[DEBUG] showPlayer: player is null");
+			return;
+		}
 		if (Commands.isDebugMode()) applog.log(LOG_LEVEL, "[DEBUG] showPlayer: showing " + p.getName() + " to all online players");
 		for (Player player : plugin.getServer().getOnlinePlayers()) {
-			if (player.equals(p)) {
+			if (player == null || player.equals(p)) {
 				continue;
+			}
+			if (plugin == null) {
+				applog.log(LOG_LEVEL, "[DEBUG] showPlayer: plugin is null, cannot show player " + p.getName());
+				return; 
 			}
 			player.showPlayer(plugin, p);
 		}

@@ -1,9 +1,10 @@
 package bubbles.sabotage.plugin;
 
+import org.bukkit.plugin.java.JavaPlugin;
 import bubbles.sabotage.plugin.game.Game;
 import bubbles.sabotage.plugin.util.Text;
 import org.bukkit.Bukkit;
-import org.bukkit.ChatColor;
+import net.md_5.bungee.api.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -26,7 +27,7 @@ public class Kit {
 	public static final int HOTBAR_SIZE = 9;
 	public static final int ARMOR_SIZE = 4; // Order: boots, leggings, chestplate, helmet
 
-	private static Game game = Main.getPlugin(Main.class).getGame();
+	private static Game game = JavaPlugin.getPlugin(Main.class).getGame();
 
 	private final String name;
 	private final int price;
@@ -74,7 +75,6 @@ public class Kit {
 		} else {
 			offhand = offhand.clone();
 		}
-		Material icon = hotbar[1] != null ? hotbar[1].getType() : Material.STONE;
 		ItemStack iconItem = hotbar[1] != null ? hotbar[1].clone() : new ItemStack(Material.STONE);
 		List<String> description = new ArrayList<>();
 		description.add("No description set yet.");

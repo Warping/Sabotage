@@ -4,8 +4,10 @@ import bubbles.sabotage.plugin.Main;
 import bubbles.sabotage.plugin.counter.Counter;
 import bubbles.sabotage.plugin.groups.SabTeams;
 import bubbles.sabotage.plugin.items.customitem.CustomItem;
+import bubbles.sabotage.plugin.util.Health;
 import bubbles.sabotage.plugin.util.Text;
 import bubbles.sabotage.plugin.util.Blocks;
+import net.md_5.bungee.api.ChatColor;
 import org.bukkit.*;
 import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
@@ -19,12 +21,14 @@ import org.bukkit.inventory.meta.FireworkEffectMeta;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.damage.DamageSource;
 import org.bukkit.damage.DamageType;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.logging.Level;
+import static bubbles.sabotage.plugin.Main.applog;
 
 public class Grenade extends CustomItem {
     private final float SLOW_THROW = 0.65F;
@@ -99,7 +103,7 @@ public class Grenade extends CustomItem {
         
         // If this player just took self-damage from a grenade, update the death message
         if (lastSelfDamagedPlayer == player) {
-            e.setDeathMessage(ChatColor.RED + player.getName() + " was blown up by their own grenade");
+            e.deathMessage(Text.of(ChatColor.RED + player.getName() + " was blown up by their own grenade"));
             lastSelfDamagedPlayer = null;
         }
     }
@@ -107,7 +111,12 @@ public class Grenade extends CustomItem {
     private void mainFire(Player shooter, float throwSpeed) {
         reloading.putIfAbsent(shooter, false);
         if (!contains(shooter, new ItemStack(AMMO_TYPE), 1) || reloading.get(shooter)) {
-            shooter.getWorld().playSound(shooter, Sound.BLOCK_STONE_BUTTON_CLICK_OFF, 0.5F, 2.0F);
+            @NonNull Sound blockStoneButtonClickOff = Sound.BLOCK_STONE_BUTTON_CLICK_OFF;
+            if (blockStoneButtonClickOff != null) {
+                shooter.getWorld().playSound(shooter, blockStoneButtonClickOff, 0.5F, 2.0F);
+            } else {
+                applog.log(Level.WARNING, "Sound BLOCK_STONE_BUTTON_CLICK_OFF is null!");
+            }
             return;
         }
         float speed = throwSpeed;
@@ -121,18 +130,33 @@ public class Grenade extends CustomItem {
     private void mainReload(Player shooter) {
         reloading.putIfAbsent(shooter, false);
         if (contains(shooter, new ItemStack(AMMO_TYPE), MAX_NADES) || reloading.get(shooter)) {
-            shooter.getWorld().playSound(shooter, Sound.BLOCK_STONE_BUTTON_CLICK_OFF, 0.5F, 2.0F);
+            @NonNull Sound blockStoneButtonClickOff2 = Sound.BLOCK_STONE_BUTTON_CLICK_OFF;
+            if (blockStoneButtonClickOff2 != null) {
+                shooter.getWorld().playSound(shooter, blockStoneButtonClickOff2, 0.5F, 2.0F);
+            } else {
+                applog.log(Level.WARNING, "Sound BLOCK_STONE_BUTTON_CLICK_OFF is null!");
+            }
             return;
         }
         consumeAll(shooter, new ItemStack(AMMO_TYPE));
-        shooter.getWorld().playSound(shooter, Sound.BLOCK_PISTON_EXTEND, 0.5F, 1.2F);
+        @NonNull Sound blockPistonExtend = Sound.BLOCK_PISTON_EXTEND;
+        if (blockPistonExtend != null) {
+            shooter.getWorld().playSound(shooter, blockPistonExtend, 0.5F, 1.2F);
+        } else {
+            applog.log(Level.WARNING, "Sound BLOCK_PISTON_EXTEND is null!");
+        }
         reloading.put(shooter, true);
         getPlugin().getServer().getScheduler().runTaskLater(getPlugin(), () -> {
             reloading.putIfAbsent(shooter, false);
             if (reloading.get(shooter)) {
                 reloading.put(shooter, false);
                 give(shooter, new ItemStack(AMMO_TYPE), MAX_NADES);
-                shooter.getWorld().playSound(shooter, Sound.BLOCK_PISTON_CONTRACT, 0.5F, 1.2F);
+                @NonNull Sound blockPistonContract = Sound.BLOCK_PISTON_CONTRACT;
+                if (blockPistonContract != null) {
+                    shooter.getWorld().playSound(shooter, blockPistonContract, 0.5F, 1.2F);
+                } else {
+                    applog.log(Level.WARNING, "Sound BLOCK_PISTON_CONTRACT is null!");
+                }
             }
         }, RELOAD_DELAY);
     }
@@ -150,7 +174,12 @@ public class Grenade extends CustomItem {
     }
 
     private void throwGrenade(Player shooter, ItemStack item, float vel) {
-        shooter.getWorld().playSound(shooter, Sound.ENTITY_COW_STEP, 1.0F, 1.7F);
+        @NonNull Sound entityCowStep = Sound.ENTITY_COW_STEP;
+        if (entityCowStep != null) {
+            shooter.getWorld().playSound(shooter, entityCowStep, 1.0F, 1.7F);
+        } else {
+            applog.log(Level.WARNING, "Sound ENTITY_COW_STEP is null!");
+        }
         Item grenade = shooter.getWorld().dropItem(shooter.getEyeLocation(), item);
         grenade.setPickupDelay(1000);
         grenade.setVelocity(shooter.getLocation().getDirection().multiply(vel));
@@ -262,7 +291,7 @@ public class Grenade extends CustomItem {
             if (damageSource != null) {
                 if (DEBUG) {
                     Main.applog.log(Level.INFO, "[Grenade Debug] Applying " + damage + " damage to " + victim.getName());
-                    Main.applog.log(Level.INFO, "[Grenade Debug] Before damage - Health: " + victim.getHealth() + ", MaxHealth: " + victim.getMaxHealth());
+                    Main.applog.log(Level.INFO, "[Grenade Debug] Before damage - Health: " + victim.getHealth() + ", MaxHealth: " + Health.getMax(victim));
                 }
                 
                 // For self-damage, mark it and use simple damage() so the event fires properly

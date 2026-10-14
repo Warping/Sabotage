@@ -3,7 +3,7 @@ package bubbles.sabotage.plugin.items;
 import bubbles.sabotage.plugin.Commands;
 import bubbles.sabotage.plugin.items.customitem.CustomItem;
 import bubbles.sabotage.plugin.util.Text;
-import org.bukkit.ChatColor;
+import net.md_5.bungee.api.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;
@@ -16,6 +16,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.scheduler.BukkitScheduler;
 import org.bukkit.scheduler.BukkitTask;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -35,11 +36,9 @@ public class BarbedSlasher extends CustomItem {
 
 	// Wrapper class to track both the end time and the task
 	private static class BleedTracker {
-		long endTime;
 		BukkitTask task;
 
-		BleedTracker(long endTime, BukkitTask task) {
-			this.endTime = endTime;
+		BleedTracker(BukkitTask task) {
 			this.task = task;
 		}
 	}
@@ -160,12 +159,17 @@ public class BarbedSlasher extends CustomItem {
 			// Play sound every second (every 2 iterations since PARTICLE_INTERVAL is 10 ticks)
 			tickCounter[0]++;
 			if (tickCounter[0] % 2 == 0) {
-				victim.getWorld().playSound(victim.getLocation(), Sound.ENTITY_PLAYER_HURT, 0.5f, 1.4f);
+				@NonNull Sound entityPlayerHurt = Sound.ENTITY_PLAYER_HURT;
+				if (entityPlayerHurt != null) {
+					victim.getWorld().playSound(victim.getLocation(), entityPlayerHurt, 0.5f, 1.4f);
+				} else {
+					applog.log(Level.WARNING, "Sound ENTITY_PLAYER_HURT is null!");
+				}
 			}
 		}, 0L, PARTICLE_INTERVAL);
 		
 		// Store the task so we can cancel it if hit again
-		bleedingPlayers.put(victim.getUniqueId(), new BleedTracker(bleedEndTime, taskRef[0]));
+		bleedingPlayers.put(victim.getUniqueId(), new BleedTracker(taskRef[0]));
 	}
 
 	@EventHandler

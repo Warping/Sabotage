@@ -1,9 +1,11 @@
 package bubbles.sabotage.plugin.listeners;
 
 import bubbles.sabotage.plugin.Commands;
+import bubbles.sabotage.plugin.EditMode;
 import bubbles.sabotage.plugin.game.Game;
 import bubbles.sabotage.plugin.items.customitem.CustomItem;
-import org.bukkit.ChatColor;
+import bubbles.sabotage.plugin.util.Text;
+import net.md_5.bungee.api.ChatColor;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -13,6 +15,7 @@ import org.bukkit.entity.Arrow;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.Event;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
@@ -24,7 +27,9 @@ import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 import org.bukkit.event.inventory.InventoryOpenEvent;
 import org.bukkit.event.player.*;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.scoreboard.Team;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
@@ -45,14 +50,14 @@ public class GameListener implements Listener {
 	public void onJoin(PlayerJoinEvent e) {
 		Player player = e.getPlayer();
 		
-		if (game.getPlugin().getEditMode().isDebugMode()) {
+		if (EditMode.isDebugMode()) {
 			System.out.println("[GameListener] onJoin START: " + player.getName());
 		}
 		
 		// Restore player's inventory state (survival or edit mode) from previous session
 		game.getPlugin().getEditMode().restoreInventoryState(player);
 		
-		if (game.getPlugin().getEditMode().isDebugMode()) {
+		if (EditMode.isDebugMode()) {
 			ItemStack[] inv = player.getInventory().getContents();
 			StringBuilder sb = new StringBuilder();
 			for (int i = 0; i < Math.min(inv.length, 10); i++) {
@@ -66,20 +71,20 @@ public class GameListener implements Listener {
 		
 		// If player is in edit mode, skip normal game logic
 		if (game.getPlugin().getEditMode().isEditing(player)) {
-			if (game.getPlugin().getEditMode().isDebugMode()) {
+			if (EditMode.isDebugMode()) {
 				System.out.println("[GameListener] onJoin: Player is editing, skipping spectator()");
 			}
 			return;
 		}
 		
-		if (game.getPlugin().getEditMode().isDebugMode()) {
+		if (EditMode.isDebugMode()) {
 			System.out.println("[GameListener] onJoin: Calling spectator()...");
 		}
 		game.showPlayer(player);
 		player.setGameMode(GameMode.SURVIVAL);
 		game.spectator(player);
 		
-		if (game.getPlugin().getEditMode().isDebugMode()) {
+		if (EditMode.isDebugMode()) {
 			ItemStack[] invAfter = player.getInventory().getContents();
 			StringBuilder sb2 = new StringBuilder();
 			for (int i = 0; i < Math.min(invAfter.length, 10); i++) {
@@ -114,16 +119,20 @@ public class GameListener implements Listener {
 		// active game) before this join would otherwise never be hidden/shown to the new
 		// joiner, leaving them appearing as a frozen, non-updating entity. Explicitly sync the
 		// new joiner's view of every other currently-online player here.
-		for (Player other : game.getPlugin().getServer().getOnlinePlayers()) {
-			if (other.equals(player)) {
+		@NonNull Plugin plugin = game.getPlugin();
+		if (plugin == null) {
+			return;
+		}
+		for (Player other : plugin.getServer().getOnlinePlayers()) {
+			if (other == null || other.equals(player)) {
 				continue;
 			}
 			if (game.isActive() && !game.getPlayerStatus(other)) {
 				if (Commands.isDebugMode()) applog.log(Level.INFO, "[DEBUG] onJoin sync: hiding " + other.getName() + " from new joiner " + player.getName());
-				player.hidePlayer(game.getPlugin(), other);
+				player.hidePlayer(plugin, other);
 			} else {
 				if (Commands.isDebugMode()) applog.log(Level.INFO, "[DEBUG] onJoin sync: showing " + other.getName() + " to new joiner " + player.getName());
-				player.showPlayer(game.getPlugin(), other);
+				player.showPlayer(plugin, other);
 			}
 		}
 	}
@@ -185,14 +194,14 @@ public class GameListener implements Listener {
 		Player victim = e.getEntity();
 		Player attacker = victim.getKiller();
 		if (attacker == null) {
-			e.setDeathMessage(ChatColor.YELLOW + formatDeathMessage(pick(NO_KILLER_DEATH_MESSAGES), victim, null));
+			e.deathMessage(Text.of(ChatColor.YELLOW + formatDeathMessage(pick(NO_KILLER_DEATH_MESSAGES), victim, null)));
 			return;
 		}
 		// Self-kills are left to the item handlers (e.g. Grenade's own-grenade message).
 		if (attacker.equals(victim)) {
 			return;
 		}
-		e.setDeathMessage(ChatColor.YELLOW + formatDeathMessage(pick(poolForCause(victim)), victim, attacker));
+		e.deathMessage(Text.of(ChatColor.YELLOW + formatDeathMessage(pick(poolForCause(victim)), victim, attacker)));
 	}
 
 	private String[] poolForCause(Player victim) {
@@ -225,7 +234,7 @@ public class GameListener implements Listener {
 
 	private String coloredName(Player player) {
 		Team team = game.getTeams().getTeamOfPlayer(player);
-		ChatColor color = (team != null && team.getColor() != null) ? team.getColor() : ChatColor.WHITE;
+		ChatColor color = team != null ? Text.chatColor(team) : ChatColor.WHITE;
 		return color + player.getName();
 	}
 
@@ -318,7 +327,7 @@ public class GameListener implements Listener {
 		boolean willCancel = !playing && !editing;
 		if (Commands.isDebugMode()) applog.log(Level.INFO, "[DEBUG] onWorldInteract: " + player.getName() + " action=" + e.getAction()
 				+ " item=" + e.getItem() + " playerStatus=" + playing + " editing=" + editing
-				+ " alreadyCancelled=" + e.isCancelled() + " willCancel=" + willCancel);
+				+ " alreadyCancelled=" + (e.useInteractedBlock() == Event.Result.DENY) + " willCancel=" + willCancel);
 		if (willCancel) {
 			e.setCancelled(true);
 		}
@@ -437,7 +446,7 @@ public class GameListener implements Listener {
 		Player player = (Player) e.getPlayer();
 		
 		if (game.getPlugin().getEditMode().isEditing(player)) {
-			if (game.getPlugin().getEditMode().isDebugMode()) {
+			if (EditMode.isDebugMode()) {
 				System.out.println("[GameListener] onInventoryClose: " + player.getName() + " closed inventory while in edit mode - auto-saving creative inventory");
 			}
 			game.getPlugin().getEditMode().saveCreativeInventoryToDisk(player);

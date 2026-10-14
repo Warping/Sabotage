@@ -1,5 +1,6 @@
 package bubbles.sabotage.plugin.fileIO;
 
+import org.bukkit.plugin.java.JavaPlugin;
 import bubbles.sabotage.plugin.Kit;
 import bubbles.sabotage.plugin.Main;
 import bubbles.sabotage.plugin.groups.SabKits;
@@ -7,6 +8,8 @@ import bubbles.sabotage.plugin.items.customitem.CustomItem;
 import org.bukkit.Color;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
+import io.papermc.paper.registry.RegistryAccess;
+import io.papermc.paper.registry.RegistryKey;
 import org.bukkit.Registry;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -26,7 +29,6 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Comparator;
 import java.util.Enumeration;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -53,7 +55,7 @@ public final class KitIO {
 	private KitIO() {}
 
 	public static SabKits loadKits(String gameName) {
-		Main plugin = Main.getPlugin(Main.class);
+		Main plugin = JavaPlugin.getPlugin(Main.class);
 		File dir = kitsDir(gameName);
 		if (!dir.exists()) {
 			dir.mkdirs();
@@ -61,11 +63,11 @@ public final class KitIO {
 		extractDefaults(plugin, dir);
 
 		SabKits kits = new SabKits(plugin);
-		File[] files = dir.listFiles((d, fileName) -> fileName.endsWith(".yml"));
+		File[] files = dir.listFiles((_, fileName) -> fileName.endsWith(".yml"));
 		if (files == null) {
 			return kits;
 		}
-		Arrays.sort(files, Comparator.comparing(File::getName));
+		Arrays.sort(files, (a, b) -> a.getName().compareTo(b.getName()));
 		for (File file : files) {
 			try {
 				Kit kit = parseKit(file);
@@ -105,7 +107,7 @@ public final class KitIO {
 				}
 			} else {
 				File kitsResourceDir = new File(source, "kits");
-				File[] files = kitsResourceDir.listFiles((d, n) -> n.endsWith(".yml"));
+				File[] files = kitsResourceDir.listFiles((_, n) -> n.endsWith(".yml"));
 				if (files != null) {
 					for (File f : files) {
 						ids.add(f.getName().substring(0, f.getName().length() - ".yml".length()));
@@ -157,7 +159,7 @@ public final class KitIO {
 				int slot;
 				try {
 					slot = Integer.parseInt(key);
-				} catch (NumberFormatException e) {
+				} catch (NumberFormatException _) {
 					continue;
 				}
 				if (slot < 1 || slot >= Kit.HOTBAR_SIZE) {
@@ -209,7 +211,7 @@ public final class KitIO {
 
 		Object customKey = map.get("custom");
 		if (customKey != null) {
-			CustomItem customItem = Main.getPlugin(Main.class).getCustomItems().get(customKey.toString());
+			CustomItem customItem = JavaPlugin.getPlugin(Main.class).getCustomItems().get(customKey.toString());
 			if (customItem == null) {
 				applog.log(Level.WARNING, "Unknown custom item referenced in kit file: " + customKey);
 				return null;
@@ -245,7 +247,7 @@ public final class KitIO {
 					potionMeta.setBasePotionType(potionType);
 					meta = potionMeta;
 					metaChanged = true;
-				} catch (IllegalArgumentException e) {
+				} catch (IllegalArgumentException _) {
 					applog.log(Level.WARNING, "Invalid potion type: " + potionTypeObj);
 				}
 			}
@@ -254,7 +256,12 @@ public final class KitIO {
 		Map<String, Object> enchantsMap = asMap(map.get("enchants"));
 		if (enchantsMap != null) {
 			for (Map.Entry<String, Object> entry : enchantsMap.entrySet()) {
-				Enchantment enchant = Registry.ENCHANTMENT.get(NamespacedKey.minecraft(entry.getKey().toLowerCase(Locale.ROOT)));
+				NamespacedKey key = NamespacedKey.minecraft(entry.getKey().toLowerCase(Locale.ROOT));
+				if (key == null) {
+					applog.log(Level.WARNING, "Invalid enchantment key: " + entry.getKey());
+					continue;
+				}
+				Enchantment enchant = RegistryAccess.registryAccess().getRegistry(RegistryKey.ENCHANTMENT).get(key);
 				if (enchant != null && entry.getValue() instanceof Number) {
 					meta.addEnchant(enchant, ((Number) entry.getValue()).intValue(), true);
 					metaChanged = true;
@@ -297,12 +304,13 @@ public final class KitIO {
 	 * as a {@link ConfigurationSection} (the common case for nested mappings) or already as a
 	 * {@link Map}. Returns null if raw is neither.
 	 */
-	@SuppressWarnings("unchecked")
 	private static Map<String, Object> asMap(Object raw) {
 		if (raw instanceof ConfigurationSection) {
 			return ((ConfigurationSection) raw).getValues(false);
 		} else if (raw instanceof Map) {
-			return (Map<String, Object>) raw;
+			@SuppressWarnings("unchecked")
+			Map<String, Object> map = (Map<String, Object>) raw;
+			return map;
 		}
 		return null;
 	}
@@ -312,13 +320,22 @@ public final class KitIO {
 		if (!(typeName instanceof String)) {
 			return null;
 		}
-		PotionEffectType type = Registry.EFFECT.get(NamespacedKey.minecraft(((String) typeName).toLowerCase(Locale.ROOT)));
-		if (type == null) {
+		NamespacedKey key = NamespacedKey.minecraft(((String) typeName).toLowerCase(Locale.ROOT));
+		if (key == null) {
+			applog.log(Level.WARNING, "Invalid potion effect key: " + typeName);
 			return null;
 		}
-		int amplifier = raw.get("amplifier") instanceof Number ? ((Number) raw.get("amplifier")).intValue() : 0;
-		int duration = raw.get("duration") instanceof Number ? ((Number) raw.get("duration")).intValue() : 200;
-		boolean hideParticles = raw.get("hideParticles") instanceof Boolean ? (Boolean) raw.get("hideParticles") : false;
+		PotionEffectType type = Registry.EFFECT.get(key);
+		if (type == null) {
+			applog.log(Level.WARNING, "Potion effect type not found for key: " + typeName);
+			return null;
+		}
+		Object amplifierValue = raw.get("amplifier");
+		int amplifier = amplifierValue instanceof Number ? ((Number) amplifierValue).intValue() : 0;
+		Object durationValue = raw.get("duration");
+		int duration = durationValue instanceof Number ? ((Number) durationValue).intValue() : 200;
+		Object hideValue = raw.get("hideParticles");
+		boolean hideParticles = hideValue instanceof Boolean && (Boolean) hideValue;
 		
 		if (duration == -1) {
 			duration = Integer.MAX_VALUE;
@@ -390,7 +407,7 @@ public final class KitIO {
 	}
 
 	private static Object toItemSpec(ItemStack item) {
-		for (Map.Entry<String, CustomItem> entry : Main.getPlugin(Main.class).getCustomItems().entrySet()) {
+		for (Map.Entry<String, CustomItem> entry : JavaPlugin.getPlugin(Main.class).getCustomItems().entrySet()) {
 			ItemStack candidate = entry.getValue().getItem().clone();
 			candidate.setAmount(item.getAmount());
 			if (candidate.equals(item)) {

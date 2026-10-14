@@ -12,6 +12,7 @@ import org.bukkit.configuration.serialization.ConfigurationSerialization;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scoreboard.Scoreboard;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -24,7 +25,7 @@ public class Main extends JavaPlugin {
 	private Scoreboard board;
 	private Game game;
 	private EditMode editMode = new EditMode();
-	private HashMap<String, CustomItem> items = new HashMap<String, CustomItem>();
+	private HashMap<String, CustomItem> items = new HashMap<>();
 	private final Level LOG_LEVEL = Level.INFO;
 	public static Logger applog;
 	
@@ -61,9 +62,13 @@ public class Main extends JavaPlugin {
 	// Paper plugins can't declare commands in paper-plugin.yml or use getCommand(), so each
 	// command is registered in code and forwarded to Commands#handle.
 	private void registerSabCommand(String name, String description, String permission, String usage) {
+		if (name == null || description == null) {
+			applog.log(LOG_LEVEL, "[DEBUG] registerSabCommand: name or description is null");
+			return;
+		}
 		registerCommand(name, description, new BasicCommand() {
 			@Override
-			public void execute(CommandSourceStack stack, String[] args) {
+			public void execute(@org.jspecify.annotations.NonNull CommandSourceStack stack, String @org.jspecify.annotations.NonNull [] args) {
 				if (!cmds.handle(stack.getSender(), name, args)) {
 					stack.getSender().sendMessage("Usage: " + usage);
 				}
@@ -172,8 +177,16 @@ public class Main extends JavaPlugin {
 	}
 
 	public void updateScoreboard() {
+		@NonNull Scoreboard current = board;
+		if (current == null) {
+			applog.log(LOG_LEVEL, "[DEBUG] updateScoreboard: board is null");
+			return;
+		}
 		for (Player p : getServer().getOnlinePlayers()) {
-			p.setScoreboard(board);
+			if (p == null) {
+				continue;
+			}
+			p.setScoreboard(current);
 		}
 	}
 

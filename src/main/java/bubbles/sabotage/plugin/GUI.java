@@ -8,8 +8,12 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
+import static bubbles.sabotage.plugin.Main.applog;
+
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Objects;
+import java.util.logging.Level;
 
 public class GUI {
 	
@@ -19,17 +23,18 @@ public class GUI {
 	private String[] cmds; // Commands in GUI
 	//private GUIListener listen;
 	private Main plugin;
+	private final Level LOG_LEVEL = Level.INFO;
 	
 	public GUI(Main plugin, String name, ItemStack[] items, String[] cmds) {
-		this.plugin = plugin;
+		this.plugin = Objects.requireNonNull(plugin, "plugin");
 		this.name = name;
-		this.items = items;
-		this.cmds = cmds;
+		this.items = Objects.requireNonNull(items, "items");
+		this.cmds = Objects.requireNonNull(cmds, "cmds");
 		for (int i = 0; i < items.length; i++) {
 			if (items[i]==null) {
 				items[i] = new ItemStack(Material.AIR);
 				this.cmds[i] = "";
-			} else if (cmds[i].equals(null)) {
+			} else if (cmds[i] == null) {
 				this.cmds[i] = "";
 			}
 		}
@@ -38,7 +43,7 @@ public class GUI {
 	}
 	
 	public GUI(Main plugin, String name) {
-		this.plugin = plugin;
+		this.plugin = Objects.requireNonNull(plugin, "plugin");
 		this.name = name;
 		this.items = new ItemStack[0];
 		this.cmds = new String[0];
@@ -53,8 +58,10 @@ public class GUI {
 	}
 	
 	public void addSlot(ItemStack newItem, String newCmd) {
-		ArrayList<ItemStack> _items = new ArrayList<ItemStack>(Arrays.asList(items));
-		ArrayList<String> _cmds = new ArrayList<String>(Arrays.asList(cmds));
+		if (newItem == null) newItem = new ItemStack(Material.AIR);
+		if (newCmd == null) newCmd = "";
+		ArrayList<ItemStack> _items = new ArrayList<>(Arrays.asList(items));
+		ArrayList<String> _cmds = new ArrayList<>(Arrays.asList(cmds));
 		_items.add(newItem);
 		_cmds.add(newCmd);
 		items = _items.toArray(new ItemStack[_items.size()]);
@@ -63,8 +70,9 @@ public class GUI {
 	}
 	
 	public void removeSlot(ItemStack item) {
-		ArrayList<ItemStack> _items = new ArrayList<ItemStack>(Arrays.asList(items));
-		ArrayList<String> _cmds = new ArrayList<String>(Arrays.asList(cmds));
+		if (item == null) return;
+		ArrayList<ItemStack> _items = new ArrayList<>(Arrays.asList(items));
+		ArrayList<String> _cmds = new ArrayList<>(Arrays.asList(cmds));
 		int index = _items.indexOf(item);
 		if (index == -1) return; //item already removed/not present, nothing to do
 		_cmds.remove(index);
@@ -75,8 +83,8 @@ public class GUI {
 	}
 	
 	public void removeSlot(int index) {
-		ArrayList<ItemStack> _items = new ArrayList<ItemStack>(Arrays.asList(items));
-		ArrayList<String> _cmds = new ArrayList<String>(Arrays.asList(cmds));
+		ArrayList<ItemStack> _items = new ArrayList<>(Arrays.asList(items));
+		ArrayList<String> _cmds = new ArrayList<>(Arrays.asList(cmds));
 		_items.remove(index);
 		_cmds.remove(index);
 		items = _items.toArray(new ItemStack[_items.size()]);
@@ -85,8 +93,8 @@ public class GUI {
 	}
 	
 	public void addSlot() {
-		ArrayList<ItemStack> _items = new ArrayList<ItemStack>(Arrays.asList(items));
-		ArrayList<String> _cmds = new ArrayList<String>(Arrays.asList(cmds));
+		ArrayList<ItemStack> _items = new ArrayList<>(Arrays.asList(items));
+		ArrayList<String> _cmds = new ArrayList<>(Arrays.asList(cmds));
 		_items.add(new ItemStack(Material.AIR));
 		_cmds.add("");
 		items = _items.toArray(new ItemStack[_items.size()]);
@@ -95,9 +103,10 @@ public class GUI {
 	}
 	
 	public String getCmd(ItemStack currentItem) {
+		if (currentItem == null) return "";
 		for (int i = 0; i < items.length; i++) {
-			if (items[i].equals(currentItem)) {
-				return cmds[i];
+			if (items[i] != null && items[i].equals(currentItem)) {
+				return cmds[i] == null ? "" : cmds[i];
 			}
 		}
 		return "";
@@ -116,28 +125,41 @@ public class GUI {
 	}
 
 	public void open(Player player) {
-		player.openInventory(inv);
+		if (player != null && inv != null) {
+			player.openInventory(inv);
+		}
+		return;
 	}
 
 	public void execute(Player player, ItemStack currentItem) {
+		if (player == null) return;
 		String cmd = getCmd(currentItem);
 		if (cmd.startsWith("/")) {
-			player.performCommand(cmd.substring(1));
+			String message = cmd.substring(1);
+			if (message == null || message.isEmpty()) {
+				applog.log(LOG_LEVEL, "[DEBUG] execute: command is empty for player " + player.getName());
+				return; // do nothing if the command is empty
+			}
+			player.performCommand(message);
 		} else {
 			player.chat(cmd);
 		}
 	}
 
 	public void execute(CustomItem citem, Player player, ItemStack currentItem) {
+		if (player == null) return;
 		String cmd = getCmd(currentItem);
 		if (cmd.startsWith("/")) {
-			player.performCommand(cmd.substring(1));
+			String message = cmd.substring(1);
+			if (message.isEmpty()) return;
+			player.performCommand(message);
 		} else {
 			player.chat(cmd);
 		}
 	}
 
 	public void closeInventory(HumanEntity player) {
+		if (player == null) return;
 		player.closeInventory();
 	}
 	

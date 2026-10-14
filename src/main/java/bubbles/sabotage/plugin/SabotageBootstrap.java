@@ -9,6 +9,7 @@ import io.papermc.paper.registry.event.RegistryEvents;
 import io.papermc.paper.registry.keys.tags.ItemTypeTagKeys;
 import net.kyori.adventure.text.Component;
 import org.bukkit.inventory.EquipmentSlotGroup;
+import org.jspecify.annotations.NonNull;
 
 // Runs before Main#onEnable so custom enchantments exist in the registry when items are built.
 public class SabotageBootstrap implements PluginBootstrap {
@@ -18,7 +19,7 @@ public class SabotageBootstrap implements PluginBootstrap {
     public static final String FROST_BITE_KEY = "sabotage:frost_bite";
 
     @Override
-    public void bootstrap(BootstrapContext context) {
+    public void bootstrap(@NonNull BootstrapContext context) {
         context.getLifecycleManager().registerEventHandler(RegistryEvents.ENCHANTMENT.compose(), event -> {
             event.registry().register(TypedKey.create(RegistryKey.ENCHANTMENT, HEALTH_KEY), b -> b
                     .description(Component.text("Health"))

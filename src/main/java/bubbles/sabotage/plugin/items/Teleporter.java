@@ -3,6 +3,7 @@ package bubbles.sabotage.plugin.items;
 import bubbles.sabotage.plugin.Commands;
 import bubbles.sabotage.plugin.items.customitem.CustomItem;
 import bubbles.sabotage.plugin.util.Text;
+import org.bukkit.event.Event;
 import net.md_5.bungee.api.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -20,8 +21,11 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.*;
+import java.util.logging.Level;
+import static bubbles.sabotage.plugin.Main.applog;
 
 public class Teleporter extends CustomItem {
 
@@ -50,9 +54,9 @@ public class Teleporter extends CustomItem {
         im.displayName(Text.of(ChatColor.BLUE + "Teleporter Placement Tool"));
 
         List<String> lore = new ArrayList<>();
-        lore.add(org.bukkit.ChatColor.AQUA + "Right Click to Place Teleporter.");
-        lore.add(org.bukkit.ChatColor.AQUA + "Left Click to Pick Up Teleporter.");
-        lore.add(org.bukkit.ChatColor.AQUA + "Max 2 per player. Right-click to teleport.");
+        lore.add(ChatColor.AQUA + "Right Click to Place Teleporter.");
+        lore.add(ChatColor.AQUA + "Left Click to Pick Up Teleporter.");
+        lore.add(ChatColor.AQUA + "Max 2 per player. Right-click to teleport.");
         im.lore(Text.of(lore));
         item.setItemMeta(im);
         setItem(item);
@@ -137,7 +141,12 @@ public class Teleporter extends CustomItem {
         teleporterLoc.getBlock().setType(TELEPORTER_BLOCK);
         
         p.sendMessage(ChatColor.GREEN + "Teleporter placed. (" + playerTeleporters.get(p).size() + "/" + MAX_TELEPORTERS_PER_PLAYER + ")");
-        p.getWorld().playSound(teleporterLoc, Sound.BLOCK_BEACON_ACTIVATE, 2.0F, 1.5F);
+        @NonNull Sound blockBeaconActivate = Sound.BLOCK_BEACON_ACTIVATE;
+        if (blockBeaconActivate != null) {
+            p.getWorld().playSound(teleporterLoc, blockBeaconActivate, 2.0F, 1.5F);
+        } else {
+            applog.log(Level.WARNING, "Sound BLOCK_BEACON_ACTIVATE is null!");
+        }
     }
 
     private void removeTeleporter(Player p, Location loc) {
@@ -153,7 +162,12 @@ public class Teleporter extends CustomItem {
         }
         
         give(p, new ItemStack(TELEPORTER_BLOCK), 1);
-        p.getWorld().playSound(loc, Sound.BLOCK_BEACON_DEACTIVATE, 2.0F, 1.5F);
+        @NonNull Sound blockBeaconDeactivate = Sound.BLOCK_BEACON_DEACTIVATE;
+        if (blockBeaconDeactivate != null) {
+            p.getWorld().playSound(loc, blockBeaconDeactivate, 2.0F, 1.5F);
+        } else {
+            applog.log(Level.WARNING, "Sound BLOCK_BEACON_DEACTIVATE is null!");
+        }
         p.sendMessage(ChatColor.GREEN + "Teleporter removed.");
     }
 
@@ -213,7 +227,7 @@ public class Teleporter extends CustomItem {
             }
         }
         
-        if (teleportToLoc == null) return;
+        if (teleportFromLoc == null || teleportToLoc == null) return;
         
         Location teleportLoc = teleportToLoc.clone().add(0, 1, 0);
         
@@ -223,8 +237,18 @@ public class Teleporter extends CustomItem {
         
         lastTeleportTime.put(p, currentTime);
         
-        p.getWorld().playSound(teleportFromLoc, Sound.ENTITY_ENDERMAN_TELEPORT, 1.0F, 0.7F);
-        p.getWorld().playSound(teleportLoc, Sound.ENTITY_ENDERMAN_TELEPORT, 1.0F, 0.7F);
+        @NonNull Sound entityEndermanTeleport = Sound.ENTITY_ENDERMAN_TELEPORT;
+        if (entityEndermanTeleport != null) {
+            p.getWorld().playSound(teleportFromLoc, entityEndermanTeleport, 1.0F, 0.7F);
+        } else {
+            applog.log(Level.WARNING, "Sound ENTITY_ENDERMAN_TELEPORT is null!");
+        }
+        @NonNull Sound entityEndermanTeleport2 = Sound.ENTITY_ENDERMAN_TELEPORT;
+        if (entityEndermanTeleport2 != null) {
+            p.getWorld().playSound(teleportLoc, entityEndermanTeleport2, 1.0F, 0.7F);
+        } else {
+            applog.log(Level.WARNING, "Sound ENTITY_ENDERMAN_TELEPORT is null!");
+        }
         p.sendMessage(ChatColor.GREEN + "Teleported!");
     }
 
@@ -259,7 +283,12 @@ public class Teleporter extends CustomItem {
         breaker.sendMessage(ChatColor.GREEN + "You destroyed " + owner.getName() + "'s teleporter!");
         owner.sendMessage(ChatColor.RED + breaker.getName() + " destroyed your teleporter!");
         
-        breaker.getWorld().playSound(loc, Sound.BLOCK_BEACON_DEACTIVATE, 10.0F, 1.0F);
+        @NonNull Sound blockBeaconDeactivate2 = Sound.BLOCK_BEACON_DEACTIVATE;
+        if (blockBeaconDeactivate2 != null) {
+            breaker.getWorld().playSound(loc, blockBeaconDeactivate2, 10.0F, 1.0F);
+        } else {
+            applog.log(Level.WARNING, "Sound BLOCK_BEACON_DEACTIVATE is null!");
+        }
         
         getPlugin().getServer().getScheduler().runTaskLater(getPlugin(), () -> {
             give(owner, new ItemStack(TELEPORTER_BLOCK), 1);
@@ -284,7 +313,8 @@ public class Teleporter extends CustomItem {
         } else {
             breakingTeleporters.put(breaker, loc);
             PotionEffect haste = new PotionEffect(PotionEffectType.HASTE, Integer.MAX_VALUE, TELEPORTER_BREAK_HASTE_LEVEL - 1);
-            breaker.addPotionEffect(haste, true);
+            breaker.removePotionEffect(haste.getType());
+            breaker.addPotionEffect(haste);
         }
     }
 
@@ -313,8 +343,8 @@ public class Teleporter extends CustomItem {
 
     @EventHandler
     public void onSpawnerRightClick(PlayerInteractEvent e) {
-        if (DEBUG) System.out.println("[TELEPORTER DEBUG] onSpawnerRightClick fired for " + e.getPlayer().getName() + " (cancelled=" + e.isCancelled() + ", hand=" + e.getHand() + ")");
-        if (e.getAction() != Action.RIGHT_CLICK_BLOCK || e.isCancelled()) {
+        if (DEBUG) System.out.println("[TELEPORTER DEBUG] onSpawnerRightClick fired for " + e.getPlayer().getName() + " (cancelled=" + (e.useInteractedBlock() == Event.Result.DENY) + ", hand=" + e.getHand() + ")");
+        if (e.getAction() != Action.RIGHT_CLICK_BLOCK || e.useInteractedBlock() == Event.Result.DENY) {
             if (DEBUG) System.out.println("[TELEPORTER DEBUG] onSpawnerRightClick -> early return (action or cancelled)");
             return;
         }

@@ -2,11 +2,13 @@ package bubbles.sabotage.plugin.items;
 
 import bubbles.sabotage.plugin.SabotageBootstrap;
 import bubbles.sabotage.plugin.items.customitem.CustomItem;
+import bubbles.sabotage.plugin.util.Health;
 import bubbles.sabotage.plugin.util.Text;
-import org.bukkit.ChatColor;
+import net.md_5.bungee.api.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
-import org.bukkit.Registry;
+import io.papermc.paper.registry.RegistryAccess;
+import io.papermc.paper.registry.RegistryKey;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -33,6 +35,9 @@ public class Bloodsucker extends CustomItem {
 
         ItemStack item = new ItemStack(Material.IRON_SWORD);
         ItemMeta im = item.getItemMeta();
+        if (im == null) {
+            throw new IllegalStateException("Could not create item meta for " + Material.IRON_SWORD);
+        }
 
         // Change the item meta and item details below
         im.addEnchant(Enchantment.SHARPNESS, 1, true);
@@ -52,7 +57,15 @@ public class Bloodsucker extends CustomItem {
     }
 
     private static Enchantment healthEnchantment() {
-        return Registry.ENCHANTMENT.get(NamespacedKey.fromString(SabotageBootstrap.HEALTH_KEY));
+        NamespacedKey key = NamespacedKey.fromString(SabotageBootstrap.HEALTH_KEY);
+        if (key == null) {
+            throw new IllegalStateException("Invalid enchantment key: " + SabotageBootstrap.HEALTH_KEY);
+        }
+        Enchantment enchantment = RegistryAccess.registryAccess().getRegistry(RegistryKey.ENCHANTMENT).get(key);
+        if (enchantment == null) {
+            throw new IllegalStateException("Enchantment is not registered: " + SabotageBootstrap.HEALTH_KEY);
+        }
+        return enchantment;
     }
 
     // Returns the inventory slot of this custom sword, or -1 if the player doesn't have one.
@@ -67,8 +80,11 @@ public class Bloodsucker extends CustomItem {
     private void updateHealth(Player p) {
         int slot = findSwordSlot(p.getInventory());
         if (slot == -1) return;
-        int level = p.getInventory().getItem(slot).getItemMeta().getEnchantLevel(healthEnchantment());
-        p.setMaxHealth(BASE_HEALTH + HEALTH_PER_LEVEL * level);
+        ItemStack sword = p.getInventory().getItem(slot);
+        ItemMeta meta = sword == null ? null : sword.getItemMeta();
+        if (meta == null) return;
+        int level = meta.getEnchantLevel(healthEnchantment());
+        Health.setMax(p, BASE_HEALTH + HEALTH_PER_LEVEL * level);
     }
 
     @Override
@@ -78,13 +94,15 @@ public class Bloodsucker extends CustomItem {
         if (slot == -1) return;
 
         ItemStack sword = inv.getItem(slot);
-        ItemMeta meta = sword.getItemMeta();
-        Enchantment health = healthEnchantment();
-        int level = meta.getEnchantLevel(health);
-        if (level < SabotageBootstrap.HEALTH_MAX_LEVEL) {
-            meta.addEnchant(health, level + 1, true);
-            sword.setItemMeta(meta);
-            inv.setItem(slot, sword);
+        ItemMeta meta = sword == null ? null : sword.getItemMeta();
+        if (sword != null && meta != null) {
+            Enchantment health = healthEnchantment();
+            int level = meta.getEnchantLevel(health);
+            if (level < SabotageBootstrap.HEALTH_MAX_LEVEL) {
+                meta.addEnchant(health, level + 1, true);
+                sword.setItemMeta(meta);
+                inv.setItem(slot, sword);
+            }
         }
 
         updateHealth(attacker);

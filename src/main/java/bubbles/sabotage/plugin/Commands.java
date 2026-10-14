@@ -73,8 +73,8 @@ public class Commands {
 				break;
 			
 			case "editmodedbg":
-				game.getPlugin().getEditMode().setDebugMode(!game.getPlugin().getEditMode().isDebugMode());
-				p.sendMessage(ChatColor.GOLD + "Edit mode debug " + (game.getPlugin().getEditMode().isDebugMode() ? ChatColor.GREEN + "enabled!" : ChatColor.RED + "disabled!"));
+				EditMode.setDebugMode(!EditMode.isDebugMode());
+				p.sendMessage(ChatColor.GOLD + "Edit mode debug " + (EditMode.isDebugMode() ? ChatColor.GREEN + "enabled!" : ChatColor.RED + "disabled!"));
 				break;
 				
 			case "item":
@@ -86,7 +86,7 @@ public class Commands {
 					Player receiver = game.getPlugin().getServer().getPlayer(args[1]);
 					try {
 						Integer.parseInt(args[3]);
-					} catch (NumberFormatException e) {
+					} catch (NumberFormatException _) {
 						p.sendMessage("/sab item [player] [itemname] [count]");
 						return true;
 					}
@@ -109,7 +109,7 @@ public class Commands {
 				if (args.length==4 && args[1].equalsIgnoreCase("add")) {
 					try {
 						Integer.parseInt(args[3]);
-					} catch (NumberFormatException e) {
+					} catch (NumberFormatException _) {
 						p.sendMessage(ChatColor.RED + "Price must be a whole number!");
 						sendKitHelp(p);
 						return true;
@@ -133,7 +133,7 @@ public class Commands {
 				if (args.length==4 && args[1].equalsIgnoreCase("add")) {
 					try {
 						Integer.parseInt(args[3]);
-					} catch (NumberFormatException e) {
+					} catch (NumberFormatException _) {
 						p.sendMessage(ChatColor.RED + "Timer must be a whole number of seconds!");
 						sendBombHelp(p);
 						return true;
@@ -311,7 +311,7 @@ public class Commands {
 		int index;
 		try {
 			index = Integer.parseInt(indexArg) - 1;
-		} catch (NumberFormatException e) {
+		} catch (NumberFormatException _) {
 			p.sendMessage(ChatColor.RED + "Bomb number must be a number! Use /sab bomb to list bombs.");
 			return;
 		}
@@ -342,7 +342,7 @@ public class Commands {
 		int index;
 		try {
 			index = Integer.parseInt(indexArg) - 1;
-		} catch (NumberFormatException e) {
+		} catch (NumberFormatException _) {
 			p.sendMessage(ChatColor.RED + "Bomb number must be a number! Use /sab bomb to list bombs.");
 			return;
 		}

@@ -5,15 +5,18 @@ import bubbles.sabotage.plugin.Main;
 import bubbles.sabotage.plugin.counter.Counter;
 import bubbles.sabotage.plugin.items.customitem.CustomItem;
 import bubbles.sabotage.plugin.util.Text;
+import net.md_5.bungee.api.ChatColor;
 import org.bukkit.*;
 import org.bukkit.entity.Player;
 import org.bukkit.event.player.PlayerInteractAtEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import java.util.*;
 import java.util.logging.Level;
+import static bubbles.sabotage.plugin.Main.applog;
 
 public class Warper extends CustomItem {
 
@@ -68,7 +71,12 @@ public class Warper extends CustomItem {
 					if (queue.size() == MAX_WARP_TIME - 1) {
 						getPlugin().getServer().getScheduler().runTaskLater(getPlugin(), () -> {
 							p.sendMessage(ChatColor.GREEN + "You can now Warp!");
-							p.getWorld().playSound(p, Sound.BLOCK_NOTE_BLOCK_HARP, 0.5F, 2);
+							@NonNull Sound blockNoteBlockHarp = Sound.BLOCK_NOTE_BLOCK_HARP;
+							if (blockNoteBlockHarp != null) {
+								p.getWorld().playSound(p, blockNoteBlockHarp, 0.5F, 2);
+							} else {
+								applog.log(Level.WARNING, "Sound BLOCK_NOTE_BLOCK_HARP is null!");
+							}
 						}, 20L);
 					}
 				}
@@ -94,7 +102,12 @@ public class Warper extends CustomItem {
 		
 		if (recentPos.get(attacker).size() < MAX_WARP_TIME) {
 			attacker.sendMessage(ChatColor.RED + "Cannot warp this early! Wait " + (MAX_WARP_TIME - recentPos.get(attacker).size()) + " seconds");
-			attacker.getWorld().playSound(attacker, Sound.BLOCK_NOTE_BLOCK_BASS, 0.5F, 1);
+			@NonNull Sound blockNoteBlockBass = Sound.BLOCK_NOTE_BLOCK_BASS;
+			if (blockNoteBlockBass != null) {
+				attacker.getWorld().playSound(attacker, blockNoteBlockBass, 0.5F, 1);
+			} else {
+				applog.log(Level.WARNING, "Sound BLOCK_NOTE_BLOCK_BASS is null!");
+			}
 			if (Commands.isDebugMode()) {
 				Main.applog.log(Level.INFO, "[Warper Debug] Warp blocked - insufficient cooldown");
 			}
@@ -104,7 +117,12 @@ public class Warper extends CustomItem {
 		// Check if players are on the same team
 		if (getGame().getTeams().onSameTeam(attacker, victim)) {
 			attacker.sendMessage(ChatColor.RED + "Can't warp teammates!");
-			attacker.getWorld().playSound(attacker, Sound.BLOCK_NOTE_BLOCK_BASS, 0.5F, 1);
+			@NonNull Sound blockNoteBlockBass2 = Sound.BLOCK_NOTE_BLOCK_BASS;
+			if (blockNoteBlockBass2 != null) {
+				attacker.getWorld().playSound(attacker, blockNoteBlockBass2, 0.5F, 1);
+			} else {
+				applog.log(Level.WARNING, "Sound BLOCK_NOTE_BLOCK_BASS is null!");
+			}
 			if (Commands.isDebugMode()) {
 				Main.applog.log(Level.INFO, "[Warper Debug] Warp blocked - same team");
 			}
@@ -116,9 +134,19 @@ public class Warper extends CustomItem {
 		}
 
 		victim.getWorld().spawnParticle(Particle.CRIT, victim.getLocation(), 100, 0.1, 0.5, 0.1, 1);
-		victim.getWorld().playSound(victim, Sound.ENTITY_ENDERMAN_TELEPORT, 0.5F, 1);
+		@NonNull Sound entityEndermanTeleport = Sound.ENTITY_ENDERMAN_TELEPORT;
+		if (entityEndermanTeleport != null) {
+			victim.getWorld().playSound(victim, entityEndermanTeleport, 0.5F, 1);
+		} else {
+			applog.log(Level.WARNING, "Sound ENTITY_ENDERMAN_TELEPORT is null!");
+		}
 		victim.teleport(recentPos.get(attacker).peek());
-		victim.getWorld().playSound(victim, Sound.ENTITY_ENDERMAN_TELEPORT, 0.5F, 1);
+		@NonNull Sound entityEndermanTeleport2 = Sound.ENTITY_ENDERMAN_TELEPORT;
+		if (entityEndermanTeleport2 != null) {
+			victim.getWorld().playSound(victim, entityEndermanTeleport2, 0.5F, 1);
+		} else {
+			applog.log(Level.WARNING, "Sound ENTITY_ENDERMAN_TELEPORT is null!");
+		}
 		victim.getWorld().spawnParticle(Particle.CRIT, victim.getLocation(), 100, 0.1, 0.5, 0.1, 1);
 
 		attacker.sendMessage(ChatColor.GREEN + "Warped " + victim.getName() + " to your location from 10 seconds ago!");

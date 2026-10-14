@@ -3,7 +3,7 @@ package bubbles.sabotage.plugin.items;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.bukkit.ChatColor;
+import net.md_5.bungee.api.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -54,7 +54,7 @@ public class Trash extends CustomItem {
 		
 		
 		for (Player onlinePlayer : this.getPlugin().getServer().getOnlinePlayers()) {
-			if (getGame().getTeams().onSameTeam(player, onlinePlayer)) {
+			if (onlinePlayer == null || getGame().getTeams().onSameTeam(player, onlinePlayer)) {
 				continue;
 			}
 			loc2 = onlinePlayer.getLocation();

@@ -121,7 +121,7 @@ public class EditModeIO {
 		
 		try {
 			return GameMode.valueOf(currentModeStr);
-		} catch (IllegalArgumentException e) {
+		} catch (IllegalArgumentException _) {
 			return null;
 		}
 	}
