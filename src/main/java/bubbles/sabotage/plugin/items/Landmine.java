@@ -1,12 +1,17 @@
 package bubbles.sabotage.plugin.items;
 
+import bubbles.sabotage.plugin.Commands;
 import bubbles.sabotage.plugin.GUI;
 import bubbles.sabotage.plugin.items.customitem.CustomItem;
+import bubbles.sabotage.plugin.util.Blocks;
+import bubbles.sabotage.plugin.util.Health;
+import bubbles.sabotage.plugin.util.Text;
 import net.md_5.bungee.api.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.block.Block;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.block.Action;
@@ -14,16 +19,26 @@ import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerInteractAtEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.damage.DamageSource;
+import org.bukkit.damage.DamageType;
+import org.checkerframework.checker.nullness.qual.NonNull;
+import bubbles.sabotage.plugin.Main;
+import java.util.logging.Level;
+
 
 import java.util.*;
+import static bubbles.sabotage.plugin.Main.applog;
 
 public class Landmine extends CustomItem {
 
-    private final float POWER = 1.2F;
-    private final long FUSE_DELAY = 25L;
+    private final float POWER = 12.0F;
+    private final float RADIUS = 1.0F;
+    private final long FUSE_DELAY = 10L;
     private final long RELOAD_DELAY = 100L;
+    private final boolean DEBUG = false;
     HashMap<Location, Player> landmineLocations = new HashMap<>();
     HashMap<Player, Material> landmineSkins = new HashMap<>();
     GUI landMineSkinGUI = new GUI(getPlugin(), "Mine Appearance");
@@ -38,13 +53,13 @@ public class Landmine extends CustomItem {
 
         // Change the item meta and item details below
 
-        im.setDisplayName(ChatColor.RED + "Landmine Arming Tool");
+        im.displayName(Text.of(ChatColor.RED + "Landmine Arming Tool"));
 
         List<String> lore = new ArrayList<>();
-        lore.add(org.bukkit.ChatColor.GOLD + "Right Click to Place Mine.");
-        lore.add(org.bukkit.ChatColor.GOLD + "Sneak Right Click to Change Mine Appearance.");
-        lore.add(org.bukkit.ChatColor.GOLD + "Left Click to Pick Up Mine.");
-        im.setLore(lore);
+        lore.add(ChatColor.GOLD + "Right Click to Place Mine.");
+        lore.add(ChatColor.GOLD + "Sneak Right Click to Change Mine Appearance.");
+        lore.add(ChatColor.GOLD + "Left Click to Pick Up Mine.");
+        im.lore(Text.of(lore));
         item.setItemMeta(im);
         setItem(item);
 
@@ -93,7 +108,12 @@ public class Landmine extends CustomItem {
             landmineLoc.getBlock().setType(Material.HEAVY_WEIGHTED_PRESSURE_PLATE);
         }
         p.sendMessage(ChatColor.GREEN + "Landmine placed.");
-        p.getWorld().playSound(landmineLoc, Sound.BLOCK_BAMBOO_WOOD_PRESSURE_PLATE_CLICK_ON, 10.0F, 0.8F);
+        @NonNull Sound blockBambooWoodPressurePlateClickOn = Sound.BLOCK_BAMBOO_WOOD_PRESSURE_PLATE_CLICK_ON;
+        if (blockBambooWoodPressurePlateClickOn != null) {
+            p.getWorld().playSound(landmineLoc, blockBambooWoodPressurePlateClickOn, 0.5F, 0.8F);
+        } else {
+            applog.log(Level.WARNING, "Sound BLOCK_BAMBOO_WOOD_PRESSURE_PLATE_CLICK_ON is null!");
+        }
 
     }
 
@@ -104,7 +124,12 @@ public class Landmine extends CustomItem {
         loc.getBlock().setType(Material.AIR);
         landmineLocations.remove(loc);
         give(p, new ItemStack(Material.HEAVY_WEIGHTED_PRESSURE_PLATE), 1);
-        p.getWorld().playSound(loc, Sound.BLOCK_BAMBOO_WOOD_PRESSURE_PLATE_CLICK_OFF, 10.0F, 0.7F);
+        @NonNull Sound blockBambooWoodPressurePlateClickOff = Sound.BLOCK_BAMBOO_WOOD_PRESSURE_PLATE_CLICK_OFF;
+        if (blockBambooWoodPressurePlateClickOff != null) {
+            p.getWorld().playSound(loc, blockBambooWoodPressurePlateClickOff, 0.5F, 0.7F);
+        } else {
+            applog.log(Level.WARNING, "Sound BLOCK_BAMBOO_WOOD_PRESSURE_PLATE_CLICK_OFF is null!");
+        }
     }
 
     private boolean changeLandmineSkin(Player p) {
@@ -121,6 +146,11 @@ public class Landmine extends CustomItem {
             return;
         }
         Player victim = e.getPlayer();
+        // Check if player is a spectator 
+        if (!getGame().getPlayerStatus(victim)) {
+            e.setCancelled(true);
+            return;
+        }
         Location loc = e.getClickedBlock().getLocation();
         if (landmineLocations.containsKey(loc)) {
             Player attacker = landmineLocations.get(loc);
@@ -129,18 +159,145 @@ public class Landmine extends CustomItem {
                 return;
             }
             attacker.sendMessage(ChatColor.GREEN + "Your landmine was triggered by " + victim.getName() + "!");
-            attacker.getWorld().playSound(attacker, Sound.BLOCK_NOTE_BLOCK_PLING, 10.0F, 1F);
+            @NonNull Sound blockNoteBlockPling = Sound.BLOCK_NOTE_BLOCK_PLING;
+            if (blockNoteBlockPling != null) {
+                attacker.getWorld().playSound(attacker, blockNoteBlockPling, 0.5F, 1F);
+            } else {
+                applog.log(Level.WARNING, "Sound BLOCK_NOTE_BLOCK_PLING is null!");
+            }
             landmineLocations.remove(loc);
-            getPlugin().getServer().getScheduler().scheduleSyncDelayedTask(getPlugin(), () -> {
+            getPlugin().getServer().getScheduler().runTaskLater(getPlugin(), () -> {
                 e.getClickedBlock().setType(Material.AIR);
-                victim.getWorld().playSound(loc, Sound.ENTITY_CREEPER_PRIMED, 10F, 1.2F);
+                @NonNull Sound entityCreeperPrimed = Sound.ENTITY_CREEPER_PRIMED;
+                if (entityCreeperPrimed != null) {
+                    victim.getWorld().playSound(loc, entityCreeperPrimed, 2.0F, 1.2F);
+                } else {
+                    applog.log(Level.WARNING, "Sound ENTITY_CREEPER_PRIMED is null!");
+                }
             }, 1);
-            getPlugin().getServer().getScheduler().scheduleSyncDelayedTask(getPlugin(), () ->
-                attacker.getWorld().createExplosion(loc, POWER, false, false), FUSE_DELAY);
-            getPlugin().getServer().getScheduler().scheduleSyncDelayedTask(getPlugin(), () ->
+            getPlugin().getServer().getScheduler().runTaskLater(getPlugin(), () ->
+                explodeLandmine(loc, attacker), FUSE_DELAY);
+            getPlugin().getServer().getScheduler().runTaskLater(getPlugin(), () ->
                 give(attacker, new ItemStack(Material.HEAVY_WEIGHTED_PRESSURE_PLATE), 1), RELOAD_DELAY);
         }
 
+    }
+
+    private void explodeLandmine(Location explosionLoc, Player shooter) {
+        explosionLoc.getWorld().createExplosion(explosionLoc, 0, false, false);
+
+        if (DEBUG) {
+            Main.applog.log(Level.INFO, "[Landmine Debug] Explosion at " + explosionLoc.getX() + ", " + explosionLoc.getY() + ", " + explosionLoc.getZ() + " triggered by " + shooter.getName());
+        }
+
+        DamageSource damageSource = DamageSource.builder(DamageType.PLAYER_EXPLOSION)
+            .withCausingEntity(shooter)
+            .withDirectEntity(shooter)
+            .withDamageLocation(explosionLoc)
+            .build();
+        
+        DamageSource selfDamageSource = DamageSource.builder(DamageType.EXPLOSION)
+            .withDamageLocation(explosionLoc)
+            .build();
+        
+        // Get nearby entities directly from explosion location
+        Collection<Entity> nearbyEntities = explosionLoc.getWorld().getNearbyEntities(explosionLoc, RADIUS, RADIUS, RADIUS);
+        
+        if (DEBUG) {
+            Main.applog.log(Level.INFO, "[Landmine Debug] Found " + nearbyEntities.size() + " nearby entities");
+        }
+        
+        nearbyEntities.forEach(entity -> {
+            if (DEBUG) {
+                Main.applog.log(Level.INFO, "[Landmine Debug] Checking entity: " + entity.getType() + " (" + entity.getClass().getSimpleName() + ")");
+            }
+            
+            if (!(entity instanceof Player victim)) {
+                if (DEBUG) {
+                    Main.applog.log(Level.INFO, "[Landmine Debug] Entity is not a player, skipping");
+                }
+                return;
+            }
+
+            if (DEBUG) {
+                Main.applog.log(Level.INFO, "[Landmine Debug] Player found: " + victim.getName());
+            }
+
+            // Allow self-damage, skip teammates
+            if (victim != shooter) {
+                boolean onSameTeam = getGame().getTeams().onSameTeam(shooter, victim);
+                if (DEBUG) {
+                    Main.applog.log(Level.INFO, "[Landmine Debug] Team check: " + victim.getName() + " on same team as shooter? " + onSameTeam);
+                }
+                if (onSameTeam) {
+                    if (DEBUG) {
+                        Main.applog.log(Level.INFO, "[Landmine Debug] " + victim.getName() + " is teammate, skipping");
+                    }
+                    return;
+                }
+            } else {
+                if (DEBUG) {
+                    Main.applog.log(Level.INFO, "[Landmine Debug] " + victim.getName() + " is the shooter, allowing self-damage");
+                    Main.applog.log(Level.INFO, "[Landmine Debug] Shooter team: " + getGame().getTeams().getTeamOfPlayer(shooter));
+                    Main.applog.log(Level.INFO, "[Landmine Debug] Shooter active player status: " + getGame().getPlayerStatus(shooter));
+                }
+            }
+
+            Location victimLoc = victim.getLocation();
+            double distance = victimLoc.distance(explosionLoc);
+            
+            if (DEBUG) {
+                Main.applog.log(Level.INFO, "[Landmine Debug] " + victim.getName() + " distance: " + distance);
+            }
+            
+            if (distance == 0) {
+                distance = 0.1;
+            }
+
+            // Proximity damage math
+            double damage = (1 / distance) * POWER;
+
+            if (DEBUG) {
+                Main.applog.log(Level.INFO, "[Landmine Debug] Calculated damage for " + victim.getName() + ": " + damage);
+            }
+
+            // Apply a damage penalty if a solid wall covers the blast line of sight
+            if (distance > 0.001 && new Blocks().isBlockBetween(explosionLoc, victimLoc)) {
+                damage = damage / 3;
+                if (DEBUG) {
+                    Main.applog.log(Level.INFO, "[Landmine Debug] Block between explosion and " + victim.getName() + ", damage reduced to: " + damage);
+                }
+            }
+
+            // Apply custom tracked damage
+            if (damageSource != null) {
+                if (DEBUG) {
+                    Main.applog.log(Level.INFO, "[Landmine Debug] Applying " + damage + " damage to " + victim.getName());
+                    Main.applog.log(Level.INFO, "[Landmine Debug] Before damage - Health: " + victim.getHealth() + ", MaxHealth: " + Health.getMax(victim));
+                }
+                
+                // For self-damage, mark it and use simple damage() so the event fires properly
+                if (victim == shooter) {
+                    if (selfDamageSource != null) {
+                        victim.damage(damage, selfDamageSource);
+                    }
+                    if (DEBUG) {
+                        Main.applog.log(Level.INFO, "[Landmine Debug] Applied self-damage (will set explosion cause on death)");
+                    }
+                } else {
+                    victim.damage(damage, damageSource);
+                }
+                
+                if (DEBUG) {
+                    Main.applog.log(Level.INFO, "[Landmine Debug] After damage - Health: " + victim.getHealth());
+                    Main.applog.log(Level.INFO, "[Landmine Debug] Damage event fired for " + victim.getName());
+                }
+            } else {
+                if (DEBUG) {
+                    Main.applog.log(Level.WARNING, "[Landmine Debug] DamageSource is null for " + victim.getName());
+                }
+            }
+        });
     }
 
     @EventHandler
@@ -153,7 +310,12 @@ public class Landmine extends CustomItem {
                 Material mat = e.getCurrentItem().getType();
                 landmineSkins.put(p, mat);
                 p.sendMessage(ChatColor.GREEN + "Landmine skin set to " + mat.name() + ".");
-                p.getWorld().playSound(p, Sound.BLOCK_NOTE_BLOCK_PLING, 10.0F, 1F);
+                @NonNull Sound blockNoteBlockPling2 = Sound.BLOCK_NOTE_BLOCK_PLING;
+                if (blockNoteBlockPling2 != null) {
+                    p.getWorld().playSound(p, blockNoteBlockPling2, 0.5F, 1F);
+                } else {
+                    applog.log(Level.WARNING, "Sound BLOCK_NOTE_BLOCK_PLING is null!");
+                }
                 landMineSkinGUI.closeInventory(e.getWhoClicked());
             }
         }
@@ -179,19 +341,41 @@ public class Landmine extends CustomItem {
         removeLandmine(e.getPlayer(), e.getClickedBlock().getLocation());
     }
 
+    @EventHandler
     @Override
     protected void onDeath(PlayerDeathEvent e) {
         Player p = e.getPlayer();
+        if (Commands.isDebugMode()) System.out.println("[LANDMINE DEBUG] Player " + p.getName() + " died!");
+        if (Commands.isDebugMode()) System.out.println("[LANDMINE DEBUG] Total landmines on map: " + landmineLocations.size());
+        removeAllLandmines(p);
+    }
+
+    @EventHandler
+    public void onPlayerDisconnect(PlayerQuitEvent e) {
+        Player p = e.getPlayer();
+        if (Commands.isDebugMode()) System.out.println("[LANDMINE DEBUG] Player " + p.getName() + " disconnected!");
+        if (Commands.isDebugMode()) System.out.println("[LANDMINE DEBUG] Total landmines on map: " + landmineLocations.size());
+        removeAllLandmines(p);
+    }
+
+    private void removeAllLandmines(Player p) {
         Set<Location> toRemove = new HashSet<>();
         for (Location loc : landmineLocations.keySet()) {
-            if (landmineLocations.get(loc).equals(p)) {
+            Player owner = landmineLocations.get(loc);
+            if (Commands.isDebugMode()) System.out.println("[LANDMINE DEBUG] Checking mine at " + loc + " owned by " + owner.getName());
+            if (owner.equals(p)) {
+                if (Commands.isDebugMode()) System.out.println("[LANDMINE DEBUG] Found mine owned by " + p.getName() + " at " + loc);
                 loc.getBlock().setType(Material.AIR);
+                if (Commands.isDebugMode()) System.out.println("[LANDMINE DEBUG] Set block to AIR at " + loc);
                 toRemove.add(loc);
             }
         }
+        if (Commands.isDebugMode()) System.out.println("[LANDMINE DEBUG] Removing " + toRemove.size() + " mines from HashMap");
         for (Location loc : toRemove) {
             landmineLocations.remove(loc);
+            if (Commands.isDebugMode()) System.out.println("[LANDMINE DEBUG] Removed mine from HashMap at " + loc);
         }
+        if (Commands.isDebugMode()) System.out.println("[LANDMINE DEBUG] Landmines remaining: " + landmineLocations.size());
     }
 
     @Override

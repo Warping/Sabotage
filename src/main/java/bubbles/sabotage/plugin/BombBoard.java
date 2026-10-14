@@ -1,5 +1,8 @@
 package bubbles.sabotage.plugin;
 
+import org.bukkit.plugin.java.JavaPlugin;
+import io.papermc.paper.scoreboard.numbers.NumberFormat;
+import org.bukkit.scoreboard.Criteria;
 import org.bukkit.scoreboard.DisplaySlot;
 import org.bukkit.scoreboard.Objective;
 import org.bukkit.scoreboard.Score;
@@ -9,11 +12,12 @@ import org.bukkit.scoreboard.Team;
 import bubbles.sabotage.plugin.counter.Counter;
 import bubbles.sabotage.plugin.game.Game;
 import bubbles.sabotage.plugin.groups.SabTeams;
+import bubbles.sabotage.plugin.util.Text;
 import net.md_5.bungee.api.ChatColor;
 
 public class BombBoard {
 	
-	private static Main plugin = Main.getPlugin(Main.class);
+	private static Main plugin = JavaPlugin.getPlugin(Main.class);
 	
 	private static Game game;
 	private static Scoreboard board;
@@ -27,16 +31,16 @@ public class BombBoard {
 	public static void setup(Game _game) {
 		game = _game;
 		board = plugin.getScoreboard();
-		objBomb = board.registerNewObjective("bombboard", "dummy", boardName);
+		objBomb = board.registerNewObjective("bombboard", Criteria.DUMMY, Text.of(boardName));
 		objBomb.setDisplaySlot(DisplaySlot.SIDEBAR);
 	}
 	
 	public static void display() {
 		lines = maxLines;
 		objBomb.unregister();
-		objBomb = board.registerNewObjective("bombboard", "dummy", boardName);
+		objBomb = board.registerNewObjective("bombboard", Criteria.DUMMY, Text.of(boardName));
 		objBomb.setDisplaySlot(DisplaySlot.SIDEBAR);
-		int bomb_index = 1;
+		objBomb.numberFormat(NumberFormat.blank());
 		String tag;
 		tag = ChatColor.RED + "" + ChatColor.BOLD + "=================";
 		addLine(tag);
@@ -49,7 +53,6 @@ public class BombBoard {
 			} else {
 				name = ChatColor.WHITE + "All " + ChatColor.GOLD + "Bomb ";
 				nameLength = 8;
-				bomb_index++;
 			}
 			String suffix;
 			int spaces;
@@ -136,6 +139,7 @@ public class BombBoard {
 	}
 	
 	public static void update() {
+		count.cancel();
 		count = new Counter(10L) {
 			public void run() {
 				display();

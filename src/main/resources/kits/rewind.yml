@@ -1,0 +1,16 @@
+name: rewind
+price: 3
+icon: CLOCK
+description:
+- Carries the Rewind Clock to teleport back to an earlier position.
+- Great for quick escapes and repositioning during combat.
+hotbar:
+  '1': IRON_SWORD
+  '2':
+    custom: rewind
+armor:
+  boots: IRON_BOOTS
+  leggings: CHAINMAIL_LEGGINGS
+  chestplate: IRON_CHESTPLATE
+  helmet: CHAINMAIL_HELMET
+potionEffects: []

@@ -4,7 +4,6 @@ import org.bukkit.Material;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
-import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
@@ -28,6 +27,9 @@ public final class BombListener implements Listener {
 		if (e.getAction().equals(Action.RIGHT_CLICK_BLOCK)) {
 			if (e.getMaterial().equals(Material.BLAZE_POWDER)) {	
 				if (e.getClickedBlock().getLocation().equals(bomb.getArmLoc()) && !bomb.isArmed() && !bomb.isExploded()) {
+					if (!bomb.getPlugin().getGame().isActive()) {
+						return;
+					}
 					int dist = (int) (Math.floor(e.getPlayer().getLocation().distance(bomb.getArmLoc())) + 1);
 					if (dist >= 4) {
 						return;
@@ -48,7 +50,7 @@ public final class BombListener implements Listener {
 					if (bomb.getOwner()!=null) {
 						Player player = e.getPlayer();
 						if (bomb.getOwner().getEntries().contains(e.getPlayer().getName())) {
-							bomb.disarming(player, bomb.getOwner());
+							bomb.disarming(player);
 						} else {
 							bomb.denyDisarm(player);
 						}
@@ -60,7 +62,7 @@ public final class BombListener implements Listener {
 						}
 						else if (!team.equals(bomb.getArmedBy()) && team.getEntries().contains(e.getPlayer().getName())) {
 							Player player = e.getPlayer();
-							bomb.disarming(player, team);
+							bomb.disarming(player);
 						}
 					}
 				} else if (bomb.isExploded() && e.getClickedBlock().getLocation().equals(bomb.getDisarmLoc())) {

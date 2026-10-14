@@ -1,0 +1,20 @@
+name: trooper
+price: 0
+icon: IRON_SWORD
+description:
+- A standard-issue loadout with an iron sword.
+- Carries a handful of golden apples for sustain.
+hotbar:
+  '1':
+    material: IRON_SWORD
+    enchants:
+      SHARPNESS: 1
+  '2':
+    material: GOLDEN_APPLE
+    amount: 2
+armor:
+  boots: IRON_BOOTS
+  leggings: IRON_LEGGINGS
+  chestplate: IRON_CHESTPLATE
+  helmet: IRON_HELMET
+potionEffects: []

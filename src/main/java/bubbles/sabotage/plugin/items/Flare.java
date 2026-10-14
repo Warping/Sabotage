@@ -6,23 +6,25 @@ import java.util.List;
 import java.util.logging.Level;
 
 import bubbles.sabotage.plugin.counter.Counter;
+import net.md_5.bungee.api.ChatColor;
 import org.bukkit.*;
 import org.bukkit.block.Block;
+import org.bukkit.block.data.BlockData;
 import org.bukkit.entity.FallingBlock;
 import org.bukkit.entity.Item;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.entity.EntityChangeBlockEvent;
-import org.bukkit.event.entity.ItemSpawnEvent;
 import org.bukkit.event.player.PlayerInteractAtEntityEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
 import bubbles.sabotage.plugin.items.customitem.CustomItem;
-import org.bukkit.material.MaterialData;
+import bubbles.sabotage.plugin.util.Text;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import static bubbles.sabotage.plugin.Main.applog;
 
@@ -43,11 +45,11 @@ public class Flare extends CustomItem {
 
         // Change the item meta and item details below
 
-        im.setDisplayName(ChatColor.AQUA + "Flare");
+        im.displayName(Text.of(ChatColor.AQUA + "Flare"));
 
         List<String> lore = new ArrayList<>();
         lore.add(ChatColor.GOLD + "Throw Flare with right click to spawn supply crate!");
-        im.setLore(lore);
+        im.lore(Text.of(lore));
 
 
         // End of changes
@@ -72,7 +74,7 @@ public class Flare extends CustomItem {
                 player.getWorld().spawnParticle(Particle.FLAME, flare.getLocation().clone().add(0,0.4,0), 5, 0, 0, 0, 0);
             }
         };
-        getPlugin().getServer().getScheduler().scheduleSyncDelayedTask(getPlugin(), () -> {
+        getPlugin().getServer().getScheduler().runTaskLater(getPlugin(), () -> {
             particleTrial.cancel();
             if (!flares.contains(flare)) return;
             Location flareLocation = flare.getLocation();
@@ -112,10 +114,27 @@ public class Flare extends CustomItem {
             }
         }
         if (canSpawn) {
-            FallingBlock crate = player.getWorld().spawnFallingBlock(new Location(player.getWorld(), x + 0.5, y + 60, z + 0.5), Material.CHEST, (byte) 0);
-            crates.put(crate, player);
+            @NonNull BlockData chestData = Material.CHEST.createBlockData();
+
+            org.bukkit.entity.Entity spawnedEntity = player.getWorld().spawnEntity(
+                new Location(player.getWorld(), x + 0.5, y + 60, z + 0.5), 
+                org.bukkit.entity.EntityType.FALLING_BLOCK
+            );
+            
+            // Safely check, cast, and apply the block data inside your own safe block
+            if (spawnedEntity instanceof FallingBlock crate) {
+                crate.setBlockData(chestData);
+                crates.put(crate, player);
+            }
+
             player.sendMessage(ChatColor.AQUA + "Supply Crate Inbound...");
-            player.playSound(player, Sound.BLOCK_NOTE_BLOCK_PLING, 1, 2);
+            
+            @NonNull Sound pling = Sound.BLOCK_NOTE_BLOCK_PLING;
+            if (pling != null) {
+                player.playSound(player.getLocation(), pling, 1.0f, 2.0f);
+            } else {
+                applog.log(Level.WARNING, "Sound pling is null!");
+            }
         }
     }
 
@@ -160,7 +179,12 @@ public class Flare extends CustomItem {
                             Block activateCrate = event.getBlock();
                             activeCrates.put(activateCrate, p);
                             p.sendMessage(ChatColor.GREEN + "Supply Crate Landed!");
-                            p.getWorld().playSound(p.getLocation(), Sound.ENTITY_DRAGON_FIREBALL_EXPLODE, 1, 2);
+                            @NonNull Sound entityDragonFireballExplode = Sound.ENTITY_DRAGON_FIREBALL_EXPLODE;
+                            if (entityDragonFireballExplode != null) {
+                                p.getWorld().playSound(p.getLocation(), entityDragonFireballExplode, 1, 2);
+                            } else {
+                                applog.log(Level.WARNING, "Sound ENTITY_DRAGON_FIREBALL_EXPLODE is null!");
+                            }
                         }
                     }
                 }.runTaskLater(getPlugin(), 1L);

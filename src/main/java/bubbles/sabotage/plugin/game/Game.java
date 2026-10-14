@@ -1,8 +1,11 @@
 package bubbles.sabotage.plugin.game;
 
+import org.bukkit.plugin.java.JavaPlugin;
 import bubbles.sabotage.plugin.Bomb;
 import bubbles.sabotage.plugin.BombBoard;
+import bubbles.sabotage.plugin.Commands;
 import bubbles.sabotage.plugin.Kit;
+import bubbles.sabotage.plugin.KitIcon;
 import bubbles.sabotage.plugin.Main;
 import bubbles.sabotage.plugin.counter.Counter;
 import bubbles.sabotage.plugin.fileIO.ReadWrite;
@@ -10,12 +13,18 @@ import bubbles.sabotage.plugin.groups.SabKits;
 import bubbles.sabotage.plugin.groups.SabTeams;
 import bubbles.sabotage.plugin.items.customitem.CustomItem;
 import bubbles.sabotage.plugin.listeners.GameListener;
+import bubbles.sabotage.plugin.util.Health;
+import bubbles.sabotage.plugin.util.Text;
 import net.md_5.bungee.api.ChatColor;
 import org.bukkit.*;
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import org.bukkit.configuration.serialization.SerializableAs;
 import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffect;
+import org.bukkit.scoreboard.Criteria;
+import org.bukkit.scoreboard.DisplaySlot;
+import org.bukkit.scoreboard.Objective;
+import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
 
 import java.util.*;
@@ -26,38 +35,47 @@ import static bubbles.sabotage.plugin.Main.applog;
 @SerializableAs("Game")
 public class Game implements ConfigurationSerializable {
 	
-	private Main plugin = Main.getPlugin(Main.class);
+	private Main plugin = JavaPlugin.getPlugin(Main.class);
 	
 	private String name; //Name of Game
 	private World world; //World where game takes place
-	private HashMap<Player, String> playerKits = new HashMap<Player, String>(); //Players and their selected kit
-	private HashMap<Player, Boolean> playerStatus = new HashMap<Player, Boolean>();
-	private ArrayList<Bomb> bombs = new ArrayList<Bomb>(); //Bombs in game
-	private ArrayList<String> teamNames = new ArrayList<String>(); //Team names
+	private HashMap<Player, String> playerKits = new HashMap<>(); //Players and their selected kit
+	private HashMap<Player, Boolean> playerStatus = new HashMap<>();
+	private HashMap<Player, Counter> deathCounters = new HashMap<>(); //Pending respawn timers, so stop() can cancel them
+	private HashMap<Player, Location> deathLocations = new HashMap<>(); //Store player death locations
+	private HashMap<Player, Integer> kills = new HashMap<>(); //Kills since each player's last death
+	private ArrayList<Bomb> bombs = new ArrayList<>(); //Bombs in game
+	private ArrayList<String> teamNames = new ArrayList<>(); //Team names
 	private SabTeams teams = new SabTeams(); //Teams available
 	private SabKits kits = new SabKits(plugin); //Kits available
-	private ArrayList<Location> teamLocs = new ArrayList<Location>(); //Team Locations
+	private ArrayList<Location> teamLocs = new ArrayList<>(); //Team Locations
 	private boolean active = false; //Game has started?
 	private boolean autoBalance = true; //AutoBalance toggle
 	@SuppressWarnings("unused")
 	private GameListener listen;
 
 	private final Level LOG_LEVEL = Level.INFO;
-	
+
+	private static final int KILLS_PER_FLARE = 4;
+	private static final String KILL_OBJECTIVE = "kills";
+
 	public Game(String name, String world) {
 		
 		this.name = name;
 		this.world = plugin.getServer().getWorld(world);
 	}
 	
-	@SuppressWarnings("unchecked")
 	public Game(Map<String, Object> map) {
-		this.plugin = Main.getPlugin(Main.class);
+		this.plugin = JavaPlugin.getPlugin(Main.class);
 		this.name = (String) map.get("Name");
 		String _world = (String) map.get("World");
 		this.world = plugin.getServer().getWorld(_world);
-		this.teamNames = (ArrayList<String>) map.get("Teams");
-		this.teamLocs  = (ArrayList<Location>) map.get("Team Spawns");
+		@SuppressWarnings("unchecked")
+		ArrayList<String> names = (ArrayList<String>) map.get("Teams");
+		this.teamNames = names;
+		@SuppressWarnings("unchecked")
+		ArrayList<Location> spawns = (ArrayList<Location>) map.get("Team Spawns");
+		this.teamLocs  = spawns;
 	}
 
 	@Override
@@ -78,12 +96,11 @@ public class Game implements ConfigurationSerializable {
 	
 	public void setup() {
 		applog.log(LOG_LEVEL, "Updating Gamerules...");
-		world.setGameRule(GameRule.DO_IMMEDIATE_RESPAWN, true);
-		world.setGameRule(GameRule.DO_MOB_LOOT, false);
-		world.setGameRule(GameRule.DO_MOB_SPAWNING, false);
-		world.setGameRule(GameRule.DO_FIRE_TICK, false);
-		world.setGameRule(GameRule.DO_IMMEDIATE_RESPAWN, true);
-		world.setGameRule(GameRule.DO_TILE_DROPS, false);
+		world.setGameRule(GameRules.IMMEDIATE_RESPAWN, true);
+		world.setGameRule(GameRules.MOB_DROPS, false);
+		world.setGameRule(GameRules.SPAWN_MOBS, false);
+		world.setGameRule(GameRules.FIRE_SPREAD_RADIUS_AROUND_PLAYER, 0);
+		world.setGameRule(GameRules.BLOCK_DROPS, false);
 		world.setDifficulty(Difficulty.HARD);
 		applog.log(LOG_LEVEL,"Establishing Listener...");
 		listen = new GameListener(this);
@@ -120,8 +137,12 @@ public class Game implements ConfigurationSerializable {
 		if (autoBalance) {
 			teamBalance();
 		}
+		kills.clear();
+		showKillTablist();
+		plugin.updateScoreboard();
 		for (Player p : plugin.getServer().getOnlinePlayers()) {
 			respawn(p);
+			teleportToTeamSpawn(p);
 		}
 		BombBoard.update();
 		applog.log(LOG_LEVEL,ChatColor.GREEN + "Sabotage has started!");
@@ -130,10 +151,23 @@ public class Game implements ConfigurationSerializable {
 	
 	public void stop() {
 		active = false;
-		playerKits = new HashMap<Player, String>();
+		playerKits = new HashMap<>();
+		for (Counter counter : deathCounters.values()) {
+			counter.cancel();
+		}
+		deathCounters.clear();
+		kills.clear();
+		hideKillTablist();
+		Location worldSpawn = world != null ? world.getSpawnLocation() : null;
 		for (Player p : plugin.getServer().getOnlinePlayers()) {
+			if (p == null) {
+				continue;
+			}
 			spectator(p);
 			showPlayer(p);
+			if (worldSpawn != null) {
+				p.teleport(worldSpawn);
+			}
 		}
 		for (Bomb bomb : bombs) {
 			bomb.reset();
@@ -146,7 +180,87 @@ public class Game implements ConfigurationSerializable {
 		applog.log(LOG_LEVEL,ChatColor.GREEN + "Sabotage has ended!");
 		
 	}
+
+	// Called by a bomb right after it explodes. Ends the game once every bomb has exploded.
+	public void onBombExploded() {
+		if (!active) {
+			return;
+		}
+		HashMap<Team, Integer> explosions = new HashMap<>();
+		for (Bomb bomb : bombs) {
+			if (!bomb.isExploded()) {
+				return;
+			}
+			Team explodedBy = bomb.getExplodedBy();
+			explosions.put(explodedBy, explosions.getOrDefault(explodedBy, 0) + 1);
+		}
+		explosions.remove(null);
+		int most = Collections.max(explosions.values());
+		List<Team> leaders = new ArrayList<>();
+		for (Map.Entry<Team, Integer> entry : explosions.entrySet()) {
+			if (entry.getValue() == most) {
+				leaders.add(entry.getKey());
+			}
+		}
+		if (leaders.size() == 1) {
+			plugin.getServer().broadcast(Text.of(SabTeams.getDisplayName(leaders.get(0)) + ChatColor.GOLD + " team won with " + most + " exploded bombs!"));
+		} else {
+			StringBuilder names = new StringBuilder();
+			for (Team team : leaders) {
+				if (names.length() > 0) {
+					names.append(ChatColor.GOLD).append(", ");
+				}
+				names.append(SabTeams.getDisplayName(team));
+			}
+			plugin.getServer().broadcast(Text.of(ChatColor.GOLD + "It's a tie between " + names + ChatColor.GOLD + " with " + most + " exploded bombs each!"));
+		}
+		plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+			if (active) {
+				stop();
+			}
+		}, 100L);
+	}
 	
+	// Shows each player's kills since their last death in the tablist (player list slot).
+	public void showKillTablist() {
+		Scoreboard board = plugin.getScoreboard();
+		hideKillTablist();
+		Objective objective = board.registerNewObjective(KILL_OBJECTIVE, Criteria.DUMMY, Text.of(ChatColor.RED + "Kills"));
+		objective.setDisplaySlot(DisplaySlot.PLAYER_LIST);
+		for (Player p : plugin.getServer().getOnlinePlayers()) {
+			updateKillTablist(p);
+		}
+	}
+
+	public void hideKillTablist() {
+		Objective objective = plugin.getScoreboard().getObjective(KILL_OBJECTIVE);
+		if (objective != null) {
+			objective.unregister();
+		}
+	}
+
+	public void updateKillTablist(Player player) {
+		Objective objective = plugin.getScoreboard().getObjective(KILL_OBJECTIVE);
+		if (objective != null) {
+			objective.getScore(player.getName()).setScore(kills.getOrDefault(player, 0));
+		}
+	}
+
+	public void recordKill(Player attacker) {
+		int count = kills.getOrDefault(attacker, 0) + 1;
+		kills.put(attacker, count);
+		updateKillTablist(attacker);
+		if (count % KILLS_PER_FLARE == 0) {
+			plugin.getItems().get("flare").give(attacker, 1);
+			attacker.sendMessage(ChatColor.GOLD + "Killstreak! " + count + " kills this life - you earned a Flare!");
+		}
+	}
+
+	public void resetKills(Player player) {
+		kills.remove(player);
+		updateKillTablist(player);
+	}
+
 	public void clear(Player p) {
 		p.getInventory().clear();
 		p.updateInventory();
@@ -154,49 +268,116 @@ public class Game implements ConfigurationSerializable {
 			p.removePotionEffect(potion.getType());
 		}
 		//p.setHealth(p.getAttribute(Attribute.GENERIC_MAX_HEALTH).getDefaultValue());
-		p.setMaxHealth(20);
+		Health.setMax(p, 20);
 		p.setHealth(20);
 		p.setFoodLevel(20);
 		p.setExp(0);
 		p.setLevel(0);
 		p.setArrowsInBody(0);
-		Bukkit.getScheduler().runTask(plugin, new Runnable() {
-			@Override
-			public void run() {
-				p.setFireTicks(0);
-			}
-		});		
+		// Bukkit rejects new tasks while the plugin is disabling (stop() runs from onDisable),
+		// so clear fire directly in that case.
+		if (plugin.isEnabled()) {
+			Bukkit.getScheduler().runTask(plugin, new Runnable() {
+				@Override
+				public void run() {
+					p.setFireTicks(0);
+				}
+			});
+		} else {
+			p.setFireTicks(0);
+		}
 	}
 	
 	public void respawn(Player player) {
+		if (Commands.isDebugMode()) applog.log(LOG_LEVEL, "[DEBUG] respawn: " + player.getName() + " (active=" + active + ") invulnerable="
+				+ player.isInvulnerable());
 		player.setAllowFlight(false);
 		if (active) {
 			if (playerKits.get(player)==null) {
 				setSelectedKit(player, kits.getKits().get(0).getName());	
 			}
 			Kit.load(player, kits.getKit(playerKits.get(player)));
-			if (teams.getSpawnLoc(player)!=null) {
-				player.teleport(teams.getSpawnLoc(player));
-			}
+			if (Commands.isDebugMode()) applog.log(LOG_LEVEL, "[DEBUG] respawn: " + player.getName() + " after Kit.load invulnerable="
+					+ player.isInvulnerable());
 			setPlayerStatus(player, true);
 		}
 		showPlayer(player);
+		if (Commands.isDebugMode()) applog.log(LOG_LEVEL, "[DEBUG] respawn: " + player.getName() + " after showPlayer invulnerable="
+				+ player.isInvulnerable());
 		player.setInvulnerable(false);
+		if (Commands.isDebugMode()) applog.log(LOG_LEVEL, "[DEBUG] respawn: " + player.getName() + " immediately after setInvulnerable(false) invulnerable="
+				+ player.isInvulnerable());
+		if (Commands.isDebugMode()) applog.log(LOG_LEVEL, "[DEBUG] respawn complete: " + player.getName()
+				+ " playerStatus=" + getPlayerStatus(player) + " invulnerable=" + player.isInvulnerable());
+
+		// With doImmediateRespawn active, Minecraft's own native respawn can run moments after
+		// death, independent of (and racing against) our own deathCounter-delayed respawn().
+		// Observed in testing: the immediate setInvulnerable(false) call above sometimes fails
+		// to stick only on a respawn that follows an actual death (not on the very first
+		// activation respawn, which has no preceding death). Re-assert it a couple ticks later
+		// to win that race once any native post-death state has settled.
+		Bukkit.getScheduler().runTaskLater(plugin, () -> {
+			if (player.isOnline()) {
+				player.setInvulnerable(false);
+				if (Commands.isDebugMode()) applog.log(LOG_LEVEL, "[DEBUG] respawn: " + player.getName() + " delayed re-assert invulnerable="
+						+ player.isInvulnerable());
+			}
+		}, 2L);
+	}
+
+	public void teleportToDeathLocation(Player player) {
+		Location deathLoc = deathLocations.remove(player);
+		if (deathLoc != null) {
+			player.teleport(deathLoc);
+			if (Commands.isDebugMode()) applog.log(LOG_LEVEL, "[DEBUG] teleportToDeathLocation: " + player.getName() + " teleported back to death location");
+		}
+	}
+
+	public Location getDeathLocation(Player player) {
+		return deathLocations.get(player);
+	}
+
+	private void teleportToTeamSpawn(Player player) {
+		if (teams.getSpawnLoc(player) != null) {
+			player.teleport(teams.getSpawnLoc(player));
+			if (Commands.isDebugMode()) applog.log(LOG_LEVEL, "[DEBUG] teleportToTeamSpawn: " + player.getName() + " teleported to team spawn");
+		}
+	}
+
+	public void recordDeathLocation(Player player) {
+		deathLocations.put(player, player.getLocation().clone());
+		if (Commands.isDebugMode()) applog.log(LOG_LEVEL, "[DEBUG] recordDeathLocation: " + player.getName() + " death location stored");
 	}
 	
 	public void spectator(Player player) {
+		if (Commands.isDebugMode()) applog.log(LOG_LEVEL, "[DEBUG] spectator: " + player.getName() + " entering spectator mode (active=" + active + ")");
 		clear(player);
 		giveMenuItems(player);
+		if (playerKits.get(player) != null) {
+			KitIcon.place(player, kits.getKit(playerKits.get(player)));
+		}
 		setPlayerStatus(player, false);
 		player.setInvulnerable(true);
-		player.setAllowFlight(true);
 		if (active) {
 			hidePlayer(player);
 		}
+		if (Commands.isDebugMode()) applog.log(LOG_LEVEL, "[DEBUG] spectator complete: " + player.getName()
+				+ " playerStatus=" + getPlayerStatus(player) + " invulnerable=" + player.isInvulnerable());
 	}
 	
 	public void deathCounter(Player player, int seconds) {
-		new Counter(20L) {
+		Counter existing = deathCounters.remove(player);
+		if (existing != null) {
+			existing.cancel();
+		}
+		Bukkit.getScheduler().runTaskLater(plugin, () -> {
+			if (player.isOnline()) {
+				player.setAllowFlight(true);
+				player.setFlying(true);
+				if (Commands.isDebugMode()) applog.log(LOG_LEVEL, "[DEBUG] deathCounter: " + player.getName() + " flight enabled");
+			}
+		}, 2L);
+		Counter counter = new Counter(20L) {
 			
 			int currentTime = seconds;
 			
@@ -205,13 +386,17 @@ public class Game implements ConfigurationSerializable {
 				if (currentTime > 0 && active) {
 					player.setLevel(currentTime);
 				} else {
+					deathCounters.remove(player);
+					deathLocations.remove(player);
 					respawn(player);
+					teleportToTeamSpawn(player);
 					cancel();
 				}
 				currentTime--;
 				
 			}
 		};
+		deathCounters.put(player, counter);
 	}
 	
 	public void teamBalance() {
@@ -224,6 +409,9 @@ public class Game implements ConfigurationSerializable {
 		Queue<String> noTeamPlayers = new LinkedList<>();
 		Set<String> teamPlayers = teams.getTeamPlayers();
 		for (Player p : plugin.getServer().getOnlinePlayers()) {
+			if (p == null) {
+				continue;
+			}
 			if (!teamPlayers.contains(p.getName())) {
 				noTeamPlayers.add(p.getName());
 			}
@@ -263,13 +451,37 @@ public class Game implements ConfigurationSerializable {
 	}
 	
 	public void hidePlayer(Player p) {
+		if (p == null) {
+			if (Commands.isDebugMode()) applog.log(LOG_LEVEL, "[DEBUG] hidePlayer: player is null");
+			return;
+		}
+		if (Commands.isDebugMode()) applog.log(LOG_LEVEL, "[DEBUG] hidePlayer: hiding " + p.getName() + " from all online players");
 		for (Player player : plugin.getServer().getOnlinePlayers()) {
+			if (player == null || player.equals(p)) {
+				continue;
+			}
+			if (plugin == null) {
+				applog.log(LOG_LEVEL, "[DEBUG] hidePlayer: plugin is null, cannot hide player " + p.getName());
+				return; 
+			}
 			player.hidePlayer(plugin, p);
 		}
 	}
 	
 	public void showPlayer(Player p) {
+		if (p == null) {
+			if (Commands.isDebugMode()) applog.log(LOG_LEVEL, "[DEBUG] showPlayer: player is null");
+			return;
+		}
+		if (Commands.isDebugMode()) applog.log(LOG_LEVEL, "[DEBUG] showPlayer: showing " + p.getName() + " to all online players");
 		for (Player player : plugin.getServer().getOnlinePlayers()) {
+			if (player == null || player.equals(p)) {
+				continue;
+			}
+			if (plugin == null) {
+				applog.log(LOG_LEVEL, "[DEBUG] showPlayer: plugin is null, cannot show player " + p.getName());
+				return; 
+			}
 			player.showPlayer(plugin, p);
 		}
 	}
@@ -295,6 +507,14 @@ public class Game implements ConfigurationSerializable {
 	public void addBomb(Bomb bomb) {
 		bomb.setTeams(teams);
 		bombs.add(bomb);
+	}
+
+	public boolean removeBomb(int index) {
+		if (index < 0 || index >= bombs.size()) {
+			return false;
+		}
+		bombs.remove(index);
+		return true;
 	}
 
 	public Main getPlugin() {
@@ -355,6 +575,11 @@ public class Game implements ConfigurationSerializable {
 	
 	public void setSelectedKit(Player p, String kit) {
 		this.playerKits.put(p, kit);
+		// Only a spectating player holds the kit selector, so only their icon is shown. A
+		// playing player's icon is set on their next respawn.
+		if (p.isOnline() && !getPlayerStatus(p)) {
+			KitIcon.place(p, kits.getKit(kit));
+		}
 	}
 	
 	public void respawnPlayer(Player p) {
@@ -383,7 +608,7 @@ public class Game implements ConfigurationSerializable {
 	}
 	
 	public boolean getPlayerStatus(Player player) {
-		return playerStatus.get(player);
+		return Boolean.TRUE.equals(playerStatus.get(player));
 	}
 	
 

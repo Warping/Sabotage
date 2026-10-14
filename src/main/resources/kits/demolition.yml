@@ -1,0 +1,23 @@
+name: demolition
+price: 5
+icon: HEAVY_WEIGHTED_PRESSURE_PLATE
+description:
+- Places hidden landmines using the Landmine Arming Tool.
+- Carries spare pressure plates and an arrow for utility.
+hotbar:
+  '1':
+    material: IRON_SWORD
+    enchants:
+      KNOCKBACK: 2
+      FIRE_ASPECT: 1
+  '2':
+    custom: landmine
+  '3':
+    material: HEAVY_WEIGHTED_PRESSURE_PLATE
+    amount: 4
+armor:
+  boots: GOLDEN_BOOTS
+  leggings: CHAINMAIL_LEGGINGS
+  chestplate: CHAINMAIL_CHESTPLATE
+  helmet: IRON_HELMET
+potionEffects: []

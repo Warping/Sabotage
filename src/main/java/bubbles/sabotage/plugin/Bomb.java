@@ -1,5 +1,6 @@
 package bubbles.sabotage.plugin;
 
+import org.bukkit.plugin.java.JavaPlugin;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Level;
@@ -8,14 +9,19 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
 import org.bukkit.World;
+import org.bukkit.boss.BossBar;
+import org.bukkit.boss.BarColor;
+import org.bukkit.boss.BarStyle;
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import org.bukkit.configuration.serialization.SerializableAs;
 import org.bukkit.entity.Player;
 import org.bukkit.scoreboard.Team;
+import org.checkerframework.checker.nullness.qual.NonNull;
 
 import bubbles.sabotage.plugin.counter.Counter;
 import bubbles.sabotage.plugin.groups.SabTeams;
 import bubbles.sabotage.plugin.listeners.BombListener;
+import bubbles.sabotage.plugin.util.Text;
 import net.md_5.bungee.api.ChatColor;
 
 import static bubbles.sabotage.plugin.Main.applog;
@@ -29,15 +35,18 @@ public class Bomb implements ConfigurationSerializable {
 	private String _owner; //Owner passed as String for Serialization
 	private Team owner; //Owner of bomb (null means anyone can arm and disarm)
 	private Team armedBy; // Team which armed the bomb
+	private Team explodedBy; // Team which armed the bomb when it exploded
 	private Location armLoc; //Location where bomb shall be armed
 	private Location disarmLoc; //Location of where bomb shall be disarmed
 	private World world;
 	private SabTeams teams; //Teams which can interact with this bomb
 	private Double disarmStatus; //Percent until bomb is disarmed
-	private HashMap<Team, Double> teamStatus = new HashMap<Team, Double>(); //Percent until team bomb is armed
-	private HashMap<Team, Integer> teamTimer = new HashMap<Team, Integer>(); //Timer until bomb explodes for team
+	private HashMap<Team, Double> teamStatus = new HashMap<>(); //Percent until team bomb is armed
+	private HashMap<Team, Integer> teamTimer = new HashMap<>(); //Timer until bomb explodes for team
+	private HashMap<Player, BossBar> armingBars = new HashMap<>(); //BossBars for arming progress
+	private BossBar disarmingBar; //BossBar for disarming progress (shared across players)
 	private BombListener listen; //Listens for arm/disarm events as well as break events
-	private Main plugin = Main.getPlugin(Main.class); //Loads current plugin for world access/server messages etc.
+	private Main plugin = JavaPlugin.getPlugin(Main.class); //Loads current plugin for world access/server messages etc.
 	private int startTime; //Start time for each team
 	private final Level LOG_LEVEL = Level.FINE;
 	private final Level LOG_LEVEL_2 = Level.FINER;
@@ -115,18 +124,33 @@ public class Bomb implements ConfigurationSerializable {
 							for (Player p : world.getPlayers()) {
 								if (getOwner()==null) {
 									if (!getArmedBy().getEntries().contains(p.getName())) {
-										p.playSound(p.getLocation(), Sound.ENTITY_BLAZE_DEATH, 0.3F, 2F);
+										@NonNull Sound entityBlazeDeath = Sound.ENTITY_BLAZE_DEATH;
+										if (entityBlazeDeath != null) {
+											p.playSound(p.getLocation(), entityBlazeDeath, 0.3F, 2F);
+										} else {
+											applog.log(Level.WARNING, "Sound ENTITY_BLAZE_DEATH is null!");
+										}
 									}
-									p.sendMessage(SabTeams.getDisplayName(team) + ChatColor.GOLD + " team's bomb explodes in " + teamTimer.get(team) + " seconds!");
+									p.sendMessage(Text.of(SabTeams.getDisplayName(team) + ChatColor.GOLD + " team's bomb explodes in " + teamTimer.get(team) + " seconds!"));
 								} else if (getOwner().getEntries().contains(p.getName())){
-									p.playSound(p.getLocation(), Sound.ENTITY_BLAZE_DEATH, 0.3F, 2F);
-									p.sendMessage(ChatColor.GOLD + "Your bomb explodes in " + teamTimer.get(team) + " seconds!");
+									@NonNull Sound entityBlazeDeath2 = Sound.ENTITY_BLAZE_DEATH;
+									if (entityBlazeDeath2 != null) {
+										p.playSound(p.getLocation(), entityBlazeDeath2, 0.3F, 2F);
+									} else {
+										applog.log(Level.WARNING, "Sound ENTITY_BLAZE_DEATH is null!");
+									}
+									p.sendMessage(Text.of(ChatColor.GOLD + "Your bomb explodes in " + teamTimer.get(team) + " seconds!"));
 								}
 							}
 						}
 					} else {
 						disarmLoc.getBlock().setType(Material.TNT);
-						world.playSound(disarmLoc, Sound.ENTITY_CREEPER_DEATH, 0.5F, 1F);
+						@NonNull Sound entityCreeperDeath = Sound.ENTITY_CREEPER_DEATH;
+						if (entityCreeperDeath != null) {
+							world.playSound(disarmLoc, entityCreeperDeath, 0.5F, 1F);
+						} else {
+							applog.log(Level.WARNING, "Sound ENTITY_CREEPER_DEATH is null!");
+						}
 					}
 					if (teamTimer.get(team)==0) {
 						applog.log(LOG_LEVEL, "Bomb has exploded for team " + team.getName() + "!");
@@ -150,17 +174,40 @@ public class Bomb implements ConfigurationSerializable {
 		isCooldown = false;
 		isArmed = false;
 		isExploded = false;
+		explodedBy = null;
+		for (BossBar bar : armingBars.values()) {
+			if (bar != null) {
+				bar.removeAll();
+			}
+		}
+		armingBars.clear();
+		if (disarmingBar != null) {
+			disarmingBar.removeAll();
+			disarmingBar = null;
+		}
 	}
 	
 	public void explode() {
 		disarmLoc.getBlock().setType(Material.BLACK_WOOL);
-		world.playSound(disarmLoc, Sound.ENTITY_GENERIC_EXPLODE, 0.3F, 0.5F);
-		if (getOwner()==null) {
-			plugin.getServer().broadcastMessage(SabTeams.getDisplayName(armedBy) + " team has blown up a bomb!");
-		} else {
-			plugin.getServer().broadcastMessage(SabTeams.getDisplayName(armedBy) + " team has blown up a " + SabTeams.getDisplayName(getOwner()) + " bomb!");
+		for (Player p : plugin.getServer().getOnlinePlayers()) {
+			if (p == null) {
+				continue;
+			}
+			@NonNull Sound entityGenericExplode = Sound.ENTITY_GENERIC_EXPLODE;
+			if (entityGenericExplode != null) {
+				p.playSound(p.getLocation(), entityGenericExplode, 0.3F, 0.5F);
+			} else {
+				applog.log(Level.WARNING, "Sound ENTITY_GENERIC_EXPLODE is null!");
+			}
 		}
+		if (getOwner()==null) {
+			plugin.getServer().broadcast(Text.of(SabTeams.getDisplayName(armedBy) + " team has blown up a bomb!"));
+		} else {
+			plugin.getServer().broadcast(Text.of(SabTeams.getDisplayName(armedBy) + " team has blown up a " + SabTeams.getDisplayName(getOwner()) + " bomb!"));
+		}
+		explodedBy = armedBy;
 		isExploded = true;
+		plugin.getGame().onBombExploded();
 	}
 	
 	public void resetArmStatusAll() {
@@ -183,6 +230,10 @@ public class Bomb implements ConfigurationSerializable {
 
 	public boolean isExploded() {
 		return isExploded;
+	}
+
+	public Team getExplodedBy() {
+		return explodedBy;
 	}
 
 	public SabTeams getSabTeams() {
@@ -231,7 +282,16 @@ public class Bomb implements ConfigurationSerializable {
 		armLoc.getBlock().setType(Material.AIR);
 		disarmLoc.getBlock().setType(Material.TNT);
 		for (Player p : plugin.getServer().getOnlinePlayers()) {
-			plugin.getServer().getWorld("world").playSound(p.getLocation(), Sound.ENTITY_BLAZE_DEATH, (float) 0.3, (float) .5);
+			if (p == null) {
+				continue;
+			}
+			@NonNull Sound entityBlazeDeath3 = Sound.ENTITY_BLAZE_DEATH;
+			if (entityBlazeDeath3 != null) {
+				p.playSound(p.getLocation(), entityBlazeDeath3, (float) 10.F, (float) .5);
+			} else {
+				applog.log(Level.WARNING, "Sound ENTITY_BLAZE_DEATH is null!");
+			}
+			p.sendMessage(Text.of(SabTeams.getDisplayName(armedBy) + " team armed a bomb!"));
 		}
 		if (this.owner == null) {
 			countDown(armedBy);
@@ -240,13 +300,13 @@ public class Bomb implements ConfigurationSerializable {
 		}
 	}
 	
-	public void disarmBomb(Team disarmedBy) {
+	public void disarmBomb() {
 		this.armedBy = null;
 		isArmed = false;
 		disarmLoc.getBlock().setType(Material.AIR);
 		armLoc.getBlock().setType(Material.OBSIDIAN);
 		isCooldown = true;
-		plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable () {
+		plugin.getServer().getScheduler().runTaskLater(plugin, new Runnable () {
 			@Override
 			public void run() {
 				isCooldown = false;
@@ -256,7 +316,7 @@ public class Bomb implements ConfigurationSerializable {
 	}
 	
 	private void armingCheck(Team team, double oldStatus, Player player) {
-		plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
+		plugin.getServer().getScheduler().runTaskLater(plugin, new Runnable() {
 			
 			@Override
 			public void run() {
@@ -264,9 +324,10 @@ public class Bomb implements ConfigurationSerializable {
 				if (newStatus==oldStatus) {
 					resetArmStatus(team);
 					//plugin.updateScoreboard();
-				}
-				if ((float) oldStatus == player.getExp()) {
-					player.setExp(0F);
+					if (armingBars.containsKey(player)) {
+						armingBars.get(player).removeAll();
+						armingBars.remove(player);
+					}
 				}
 				String log = Double.toString(newStatus - oldStatus);
 				applog.log(LOG_LEVEL_2, log);
@@ -280,14 +341,14 @@ public class Bomb implements ConfigurationSerializable {
 					for (Team other : teamStatus.keySet()) {
 						resetArmStatus(other);
 					}
-					player.sendMessage(ChatColor.RED + "Overloading Bomb!");
+					player.sendMessage(Text.of(ChatColor.RED + "Overloading Bomb!"));
 				}
 			}
 		}, 20L);
 	}
 	
-	private void disarmingCheck(double oldStatus, Player player) {
-		plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
+	private void disarmingCheck(double oldStatus) {
+		plugin.getServer().getScheduler().runTaskLater(plugin, new Runnable() {
 			
 			@Override
 			public void run() {
@@ -295,9 +356,10 @@ public class Bomb implements ConfigurationSerializable {
 				if (newStatus==oldStatus) {
 					resetDisarmStatus();
 					plugin.updateScoreboard();
-				}
-				if ((float) oldStatus == player.getExp()) {
-					player.setExp(0F);
+					if (disarmingBar != null) {
+						disarmingBar.removeAll();
+						disarmingBar = null;
+					}
 				}
 			}
 		}, 20L);
@@ -305,27 +367,47 @@ public class Bomb implements ConfigurationSerializable {
 	
 	private void sound() {
 		if (isArmed) {
-			plugin.getServer().getWorld("world").playSound(disarmLoc, Sound.BLOCK_LAVA_EXTINGUISH, (float) 0.3, (float) .7);
+			@NonNull Sound blockLavaExtinguish = Sound.BLOCK_LAVA_EXTINGUISH;
+			if (blockLavaExtinguish != null) {
+				plugin.getServer().getWorld("world").playSound(disarmLoc, blockLavaExtinguish, (float) 0.3, (float) .7);
+			} else {
+				applog.log(Level.WARNING, "Sound BLOCK_LAVA_EXTINGUISH is null!");
+			}
 		} else {
-			plugin.getServer().getWorld("world").playSound(armLoc, Sound.BLOCK_LAVA_EXTINGUISH, (float) 0.3, (float) .7);
+			@NonNull Sound blockLavaExtinguish2 = Sound.BLOCK_LAVA_EXTINGUISH;
+			if (blockLavaExtinguish2 != null) {
+				plugin.getServer().getWorld("world").playSound(armLoc, blockLavaExtinguish2, (float) 0.3, (float) .7);
+			} else {
+				applog.log(Level.WARNING, "Sound BLOCK_LAVA_EXTINGUISH is null!");
+			}
 		}
 	}
 
-	public void disarming(Player player, Team team) {
+	public void disarming(Player player) {
 		sound();
 		double val = disarmStatus;
 		val += 0.025;
 		val = Math.round(val * 100.0) / 100.0;
 		disarmStatus = val;
-		player.setExp(disarmStatus.floatValue());
+		
+		if (disarmingBar == null) {
+			disarmingBar = plugin.getServer().createBossBar("Disarming Bomb", BarColor.RED, BarStyle.SOLID);
+		}
+		disarmingBar.setProgress(disarmStatus);
+		if (!disarmingBar.getPlayers().contains(player)) {
+			disarmingBar.addPlayer(player);
+		}
+		
 		if (disarmStatus>=1.0) {
-			disarmBomb(team);
+			disarmBomb();
 			resetArmStatusAll();
-			player.setExp(0F);
+			if (disarmingBar != null) {
+				disarmingBar.removeAll();
+				disarmingBar = null;
+			}
 		}
 		//plugin.updateScoreboard();
-		disarmingCheck(disarmStatus, player);
-		
+		disarmingCheck(disarmStatus);
 	}
 
 	public void arming(Player player, Team team) {
@@ -337,29 +419,42 @@ public class Bomb implements ConfigurationSerializable {
 		val += 0.025;
 		val = Math.round(val * 100.0) / 100.0;
 		teamStatus.put(team, val);
-		player.setExp(teamStatus.get(team).floatValue());
+		
+		if (!armingBars.containsKey(player)) {
+			BossBar bar = plugin.getServer().createBossBar("Arming Bomb", BarColor.RED, BarStyle.SOLID);
+			armingBars.put(player, bar);
+		}
+		BossBar armingBar = armingBars.get(player);
+		armingBar.setProgress(teamStatus.get(team));
+		if (!armingBar.getPlayers().contains(player)) {
+			armingBar.addPlayer(player);
+		}
+		
 		if (teamStatus.get(team)>=1.0) {
 			armBomb(team);
 			resetArmStatusAll();
-			player.setExp(0F);
+			if (armingBars.containsKey(player)) {
+				armingBars.get(player).removeAll();
+				armingBars.remove(player);
+			}
 		}
 		//plugin.updateScoreboard();
 		armingCheck(team, teamStatus.get(team), player);
 	}
 	
 	public void denyArm(Player p) {
-		p.sendMessage(ChatColor.RED + "You cannot arm your own team's bomb!");
+		p.sendMessage(Text.of(ChatColor.RED + "You cannot arm your own team's bomb!"));
 	}
 	
 	public void denyDisarm(Player p) {
 		if (owner==null) {
-			p.sendMessage(ChatColor.RED + "You cannot disarm a bomb you armed!");
+			p.sendMessage(Text.of(ChatColor.RED + "You cannot disarm a bomb you armed!"));
 		} else {
-			p.sendMessage(ChatColor.RED + "You cannot disarm " + owner.getColor() + owner.getName() + ChatColor.RED + " team's bomb!");
+			p.sendMessage(Text.of(ChatColor.RED + "You cannot disarm " + Text.chatColor(owner) + owner.getName() + ChatColor.RED + " team's bomb!"));
 		}
 	}
 	
 	public void explodedMsg(Player p) {
-		p.sendMessage(ChatColor.RED + "This bomb has already exploded!");
+		p.sendMessage(Text.of(ChatColor.RED + "This bomb has already exploded!"));
 	}
 }

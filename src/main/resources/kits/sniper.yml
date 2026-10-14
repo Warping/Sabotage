@@ -1,0 +1,19 @@
+name: sniper
+price: 3
+icon: ARROW
+description:
+- A long-range specialist with a high-powered rifle.
+- Distance-based damage with a reload mechanic.
+hotbar:
+  '1': STONE_SWORD
+  '2':
+    custom: rifle
+  '3':
+    material: ARROW
+    amount: 1
+armor:
+  boots: LEATHER_BOOTS
+  leggings: LEATHER_LEGGINGS
+  chestplate: LEATHER_CHESTPLATE
+  helmet: LEATHER_HELMET
+potionEffects: []

@@ -3,7 +3,7 @@ package bubbles.sabotage.plugin.items;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.bukkit.ChatColor;
+import net.md_5.bungee.api.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.entity.PlayerDeathEvent;
@@ -12,6 +12,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
 import bubbles.sabotage.plugin.items.customitem.CustomItem;
+import bubbles.sabotage.plugin.util.Text;
 
 public class HealingWand extends CustomItem {
 	
@@ -27,11 +28,11 @@ public class HealingWand extends CustomItem {
 		
 		// Change the item meta and item details below
 		
-		im.setDisplayName(ChatColor.LIGHT_PURPLE + "Healing Wand");
+		im.displayName(Text.of(ChatColor.LIGHT_PURPLE + "Healing Wand"));
 		
 		List<String> lore = new ArrayList<>();
 		lore.add(ChatColor.GOLD + "Heals teammates via right click");
-		im.setLore(lore);
+		im.lore(Text.of(lore));
 		
 		
 		// End of changes

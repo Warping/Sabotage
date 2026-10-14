@@ -1,0 +1,19 @@
+name: frost
+price: 3
+icon: ICE
+description:
+- Carries a weapon that inflicts frost damage.
+- Players who are hit will not be able to switch weapons for  5 seconds.
+hotbar:
+  '1':
+    custom: frosty
+armor:
+  boots:
+    material: LEATHER_BOOTS
+    color: '#00A0FF'
+  leggings: IRON_LEGGINGS
+  chestplate: IRON_CHESTPLATE
+  helmet:
+    material: LEATHER_HELMET
+    color: '#00A0FF'
+potionEffects: []

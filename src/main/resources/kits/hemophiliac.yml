@@ -1,0 +1,19 @@
+name: hemophiliac
+price: 3
+icon: NETHER_WART
+description:
+- Carries a barbed weapon for inflicting bleeding damage.
+- Players who are hit will not be able to naturally regenerate health for 10 seconds.
+hotbar:
+  '1':
+    custom: barbed
+armor:
+  boots:
+    material: LEATHER_BOOTS
+    color: '#FF0000'
+  leggings: IRON_LEGGINGS
+  chestplate: IRON_CHESTPLATE
+  helmet:
+    material: LEATHER_HELMET
+    color: '#FF0000'
+potionEffects: []

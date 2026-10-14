@@ -1,8 +1,12 @@
 package bubbles.sabotage.plugin.groups;
 
+import org.bukkit.plugin.java.JavaPlugin;
 import bubbles.sabotage.plugin.GUI;
 import bubbles.sabotage.plugin.Main;
-import org.bukkit.ChatColor;
+import bubbles.sabotage.plugin.util.Text;
+import net.kyori.adventure.text.format.NamedTextColor;
+import net.kyori.adventure.text.format.TextColor;
+import net.md_5.bungee.api.ChatColor;
 import org.bukkit.Color;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -19,9 +23,9 @@ import java.util.Set;
 
 public class SabTeams {
 	
-	private Main plugin = Main.getPlugin(Main.class);
-	private ArrayList<Team> teams = new ArrayList<Team>();
-	private HashMap<Team, Location> spawnLoc = new HashMap<Team, Location>();
+	private Main plugin = JavaPlugin.getPlugin(Main.class);
+	private ArrayList<Team> teams = new ArrayList<>();
+	private HashMap<Team, Location> spawnLoc = new HashMap<>();
 	private GUI teamGUI;
 	private Scoreboard board;
 	
@@ -54,7 +58,7 @@ public class SabTeams {
 		updateOptions(team);
 		ItemStack is = convertItem(teamName);
 		ItemMeta im = is.getItemMeta();
-		im.setDisplayName(getDisplayName(team) + team.getColor() + " Team");
+		im.displayName(Text.of(getDisplayName(team) + Text.chatColor(team) + " Team"));
 		is.setItemMeta(im);
 		teamGUI.addSlot(is, "/team " + teamName.toLowerCase());
 		spawnLoc.put(team, spawn);
@@ -64,19 +68,21 @@ public class SabTeams {
 	private void updateOptions(Team team) {
 		team.setCanSeeFriendlyInvisibles(true);
 		if (team.getName().toLowerCase().contains("red")) {
-			team.setColor(ChatColor.RED);
+			team.color(NamedTextColor.RED);
 		} else if (team.getName().toLowerCase().contains("blue")) {
-			team.setColor(ChatColor.BLUE);
+			team.color(NamedTextColor.BLUE);
 		} else if (team.getName().toLowerCase().contains("green")) {
-			team.setColor(ChatColor.DARK_GREEN);
+			team.color(NamedTextColor.DARK_GREEN);
 		} else if (team.getName().toLowerCase().contains("purple")) {
-			team.setColor(ChatColor.DARK_PURPLE);
+			team.color(NamedTextColor.DARK_PURPLE);
 		} else if (team.getName().toLowerCase().contains("pink")) {
-			team.setColor(ChatColor.LIGHT_PURPLE);
+			team.color(NamedTextColor.LIGHT_PURPLE);
 		} else if (team.getName().toLowerCase().contains("orange")) {
-			team.setColor(ChatColor.GOLD);
+			team.color(NamedTextColor.GOLD);
 		} else if (team.getName().toLowerCase().contains("aqua")) {
-			team.setColor(ChatColor.AQUA);
+			team.color(NamedTextColor.AQUA);
+		} else if (team.getName().toLowerCase().contains("yellow")) {
+			team.color(NamedTextColor.YELLOW);
 		}
 		team.setAllowFriendlyFire(false);
 	}
@@ -102,6 +108,8 @@ public class SabTeams {
 			item = new ItemStack(Material.ORANGE_WOOL);
 		} else if (name.toLowerCase().contains("aqua")) {
 			item = new ItemStack(Material.CYAN_WOOL);
+		} else if (name.toLowerCase().contains("yellow")) {
+			item = new ItemStack(Material.YELLOW_WOOL);
 		}
 		return item;
 	}
@@ -111,29 +119,20 @@ public class SabTeams {
 		String second = name.substring(1, name.length());
 		String first = name.substring(0, 1).toUpperCase();
 		name = first + second;
-		return team.getColor() + name + ChatColor.GOLD;
+		return Text.chatColor(team) + name + ChatColor.GOLD;
 	}
 
 	public static Color getDyeColor(Team team) {
-		switch (team.getColor()) {
-			case BLUE:
-				return Color.fromRGB(0x5555FF);
-			case RED:
-				return Color.fromRGB(0xFF5555);
-			case DARK_GREEN:
-				return Color.fromRGB(0x55FF55);
-			case DARK_PURPLE:
-				return Color.fromRGB(0xAA00AA);
-			case GOLD:
-				return Color.fromRGB(0xFFAA00);
-			case LIGHT_PURPLE:
-				return Color.fromRGB(0xFF55FF);
-			case AQUA:
-				return Color.fromRGB(0x55FFFF);
-			default:
-				break;
-		}
-
+		if (!team.hasColor()) return null;
+		TextColor color = team.color();
+		if (NamedTextColor.BLUE.equals(color)) return Color.fromRGB(0x5555FF);
+		if (NamedTextColor.RED.equals(color)) return Color.fromRGB(0xFF5555);
+		if (NamedTextColor.DARK_GREEN.equals(color)) return Color.fromRGB(0x55FF55);
+		if (NamedTextColor.DARK_PURPLE.equals(color)) return Color.fromRGB(0xAA00AA);
+		if (NamedTextColor.GOLD.equals(color)) return Color.fromRGB(0xFFAA00);
+		if (NamedTextColor.LIGHT_PURPLE.equals(color)) return Color.fromRGB(0xFF55FF);
+		if (NamedTextColor.AQUA.equals(color)) return Color.fromRGB(0x55FFFF);
+		if (NamedTextColor.YELLOW.equals(color)) return Color.fromRGB(0xFFFF55);
 		return null;
 	}
 	
@@ -150,7 +149,7 @@ public class SabTeams {
 	}
 	
 	public ArrayList<String> getTeamNames() {
-		ArrayList<String> names = new ArrayList<String>();
+		ArrayList<String> names = new ArrayList<>();
 		for (Team team : teams) {
 			names.add(team.getName());
 		}
@@ -158,7 +157,7 @@ public class SabTeams {
 	}
 	
 	public ArrayList<Location> getSpawnArray() {
-		ArrayList<Location> locs = new ArrayList<Location>();
+		ArrayList<Location> locs = new ArrayList<>();
 		for (Team team : teams) {
 			locs.add(spawnLoc.get(team));
 		}
@@ -207,7 +206,7 @@ public class SabTeams {
 	}
 	
 	public Set<String> getTeamPlayers() {
-		Set<String> teamPlayers = new HashSet<String>();
+		Set<String> teamPlayers = new HashSet<>();
 		for (Team t : teams) {
 			teamPlayers.addAll(t.getEntries());
 		}
@@ -256,9 +255,9 @@ public class SabTeams {
 		if (teams.size()==0) {
 			return "No Teams!";
 		} else if (teams.size()==1) {
-			return teams.get(0).getDisplayName();
+			return Text.plain(teams.get(0).displayName());
 		} else if (teams.size()==2) {
-			return teams.get(0).getDisplayName() + " and " + teams.get(1).getDisplayName();
+			return Text.plain(teams.get(0).displayName()) + " and " + Text.plain(teams.get(1).displayName());
 		}
 		for (int i = 0; i < teams.size() - 1; i++) {
 			str += getDisplayName(teams.get(i)) + ", ";

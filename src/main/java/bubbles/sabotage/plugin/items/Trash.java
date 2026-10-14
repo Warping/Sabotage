@@ -3,7 +3,7 @@ package bubbles.sabotage.plugin.items;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.bukkit.ChatColor;
+import net.md_5.bungee.api.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -14,6 +14,7 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
 import bubbles.sabotage.plugin.items.customitem.CustomItem;
+import bubbles.sabotage.plugin.util.Text;
 
 public class Trash extends CustomItem {
 	
@@ -27,7 +28,7 @@ public class Trash extends CustomItem {
 		
 		// Change the item meta and item details below
 		
-		im.setDisplayName(ChatColor.MAGIC + "Garbage");
+		im.displayName(Text.of(ChatColor.MAGIC + "Garbage"));
 		
 		List<String> lore = new ArrayList<>();
 		lore.add("What Danny Davito would want.");
@@ -35,7 +36,7 @@ public class Trash extends CustomItem {
 		lore.add("What Danny Davito would want.");
 		lore.add("What Danny Davito would want.");
 		lore.add("What Danny Davito would want.");
-		im.setLore(lore);
+		im.lore(Text.of(lore));
 		
 		
 		// End of changes
@@ -53,7 +54,7 @@ public class Trash extends CustomItem {
 		
 		
 		for (Player onlinePlayer : this.getPlugin().getServer().getOnlinePlayers()) {
-			if (getGame().getTeams().onSameTeam(player, onlinePlayer)) {
+			if (onlinePlayer == null || getGame().getTeams().onSameTeam(player, onlinePlayer)) {
 				continue;
 			}
 			loc2 = onlinePlayer.getLocation();
