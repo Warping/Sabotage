@@ -10,7 +10,7 @@ hotbar:
     custom: rifle
   '3':
     material: ARROW
-    amount: 3
+    amount: 1
 armor:
   boots: LEATHER_BOOTS
   leggings: LEATHER_LEGGINGS

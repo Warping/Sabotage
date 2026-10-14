@@ -28,13 +28,21 @@ implemented.
   kit's description lines in gold — see
   [SabKits.java](/c:/Users/ZAKSGAMINGRIG/Desktop/Sabotage/src/main/java/bubbles/sabotage/plugin/groups/SabKits.java).
   It is purely cosmetic and does not have to match any item actually granted by the kit.
+- **Selected Kit Icon:** While a player is spectating (in the lobby or in the death countdown,
+  when they hold the kit selector), the icon of their selected kit (set with `/kit <id>`) is
+  shown in hotbar slot `8` (the rightmost slot). It is locked there: the player cannot move,
+  swap, drag, drop, use, or wear it down. Any kit item already in slot `8` is moved into the
+  player's inventory rather than lost. Once the round starts and the player is playing, the
+  kit loads as normal with no icon, and the kit selector is not present. See
+  [KitIcon.java](/c:/Users/ZAKSGAMINGRIG/Desktop/Sabotage/src/main/java/bubbles/sabotage/plugin/KitIcon.java).
 - **Armor:** Four pieces (`armor.boots`/`leggings`/`chestplate`/`helmet`), each an item spec
   (see below). Applied via `PlayerInventory.setArmorContents()` on kit load.
 - **Offhand:** One optional item spec (`offhand`), applied via `setItemInOffHand()`.
 - **Weapons:** Vanilla or lightly-modified (enchanted/unbreakable) items, placed in hotbar
   slots `1`-`8` via an item spec — either a plain Material name (`ARROW`) or a map with
   `material`, optional `amount`, optional `enchants` (map of enchantment name to level), and
-  optional `unbreakable: true`.
+  optional `unbreakable: true`, and optional `color` (hex `'#RRGGBB'`, quoted in YAML) for
+  leather armor pieces such as `LEATHER_HELMET` to dye them.
 - **Custom Items:** A kit may grant one or more custom-item abilities by referencing a
   registered custom item's key directly from a hotbar/armor/offhand slot (e.g.
   `{custom: rewind}`), which resolves to that
@@ -86,7 +94,7 @@ deliberate decision made per-kit, not implied by naming similarity.
 | [RewindClock.java](/c:/Users/ZAKSGAMINGRIG/Desktop/Sabotage/src/main/java/bubbles/sabotage/plugin/items/RewindClock.java) | Clock | Right-click to teleport back to your position from ~12s ago |
 | [Flare.java](/c:/Users/ZAKSGAMINGRIG/Desktop/Sabotage/src/main/java/bubbles/sabotage/plugin/items/Flare.java) | Redstone Torch | Throw to call down a lootable supply crate |
 | [Landmine.java](/c:/Users/ZAKSGAMINGRIG/Desktop/Sabotage/src/main/java/bubbles/sabotage/plugin/items/Landmine.java) | Shears (+ pressure-plate mines) | Place hidden mines that explode when stepped on |
-| [Bloodsucker.java](/c:/Users/ZAKSGAMINGRIG/Desktop/Sabotage/src/main/java/bubbles/sabotage/plugin/items/Bloodsucker.java) | Iron Sword | Kills grant redstone (max HP scales with redstone held) |
+| [Bloodsucker.java](/c:/Users/ZAKSGAMINGRIG/Desktop/Sabotage/src/main/java/bubbles/sabotage/plugin/items/Bloodsucker.java) | Iron Sword | Kills grant a Health enchant level on the sword (max HP: 16 + 4 per Health level, up to Health VI) |
 | [GlassShard.java](/c:/Users/ZAKSGAMINGRIG/Desktop/Sabotage/src/main/java/bubbles/sabotage/plugin/items/GlassShard.java) | Prismarine Shard | Toggle: strength + night vision at the cost of losing hunger-healing |
 | [Bullet.java](/c:/Users/ZAKSGAMINGRIG/Desktop/Sabotage/src/main/java/bubbles/sabotage/plugin/items/Bullet.java) | Iron Nugget | Stubbed — ability not yet implemented |
 | [KitSelect.java](/c:/Users/ZAKSGAMINGRIG/Desktop/Sabotage/src/main/java/bubbles/sabotage/plugin/items/KitSelect.java) / [TeamSelect.java](/c:/Users/ZAKSGAMINGRIG/Desktop/Sabotage/src/main/java/bubbles/sabotage/plugin/items/TeamSelect.java) / [Trash.java](/c:/Users/ZAKSGAMINGRIG/Desktop/Sabotage/src/main/java/bubbles/sabotage/plugin/items/Trash.java) | — | Menu/utility items, not kit abilities |

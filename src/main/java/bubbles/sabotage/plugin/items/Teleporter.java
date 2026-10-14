@@ -12,11 +12,14 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockDamageEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 
 import java.util.*;
 
@@ -26,7 +29,9 @@ public class Teleporter extends CustomItem {
     private static final long PLACEMENT_DELAY = 2000L;
     private static final long TELEPORT_DELAY = 2000L;
     private static final long ACTIVATION_DELAY = 2000L;
-    private final long RELOAD_DELAY = 100L;
+    private static final Material TELEPORTER_BLOCK = Material.SPAWNER;
+    private static final long TELEPORTER_RETURN_DELAY = 200L;
+    private static final int TELEPORTER_BREAK_HASTE_LEVEL = 15;
     private final boolean DEBUG = false;
     
     HashMap<Location, Player> teleporterLocations = new HashMap<>();
@@ -34,6 +39,7 @@ public class Teleporter extends CustomItem {
     HashMap<Player, Long> lastPlacementTime = new HashMap<>();
     HashMap<Player, Long> lastTeleportTime = new HashMap<>();
     HashMap<Player, Long> lastActivationTime = new HashMap<>();
+    HashMap<Player, Location> breakingTeleporters = new HashMap<>();
 
     public Teleporter() {
         super();
@@ -53,7 +59,7 @@ public class Teleporter extends CustomItem {
     }
 
     private boolean isForbiddenPlacementBlock(Material material) {
-        if (material == Material.SPAWNER) {
+        if (material == TELEPORTER_BLOCK) {
             return true;
         }
         
@@ -78,7 +84,7 @@ public class Teleporter extends CustomItem {
             return;
         }
         
-        if (!contains(p, new ItemStack(Material.SPAWNER), 1)) {
+        if (!contains(p, new ItemStack(TELEPORTER_BLOCK), 1)) {
             p.sendMessage(ChatColor.RED + "You have no teleporters.");
             return;
         }
@@ -118,7 +124,7 @@ public class Teleporter extends CustomItem {
             return;
         }
         
-        consume(p, new ItemStack(Material.SPAWNER), 1);
+        consume(p, new ItemStack(TELEPORTER_BLOCK), 1);
         teleporterLocations.put(teleporterLoc, p);
         playerTeleporters.get(p).add(teleporterLoc);
         lastPlacementTime.put(p, currentTime);
@@ -128,7 +134,7 @@ public class Teleporter extends CustomItem {
             p.sendMessage(ChatColor.YELLOW + "Both teleporters placed! Activation in 2 seconds...");
         }
         
-        teleporterLoc.getBlock().setType(Material.SPAWNER);
+        teleporterLoc.getBlock().setType(TELEPORTER_BLOCK);
         
         p.sendMessage(ChatColor.GREEN + "Teleporter placed. (" + playerTeleporters.get(p).size() + "/" + MAX_TELEPORTERS_PER_PLAYER + ")");
         p.getWorld().playSound(teleporterLoc, Sound.BLOCK_BEACON_ACTIVATE, 2.0F, 1.5F);
@@ -146,7 +152,7 @@ public class Teleporter extends CustomItem {
             playerTeleporters.get(p).remove(loc);
         }
         
-        give(p, new ItemStack(Material.SPAWNER), 1);
+        give(p, new ItemStack(TELEPORTER_BLOCK), 1);
         p.getWorld().playSound(loc, Sound.BLOCK_BEACON_DEACTIVATE, 2.0F, 1.5F);
         p.sendMessage(ChatColor.GREEN + "Teleporter removed.");
     }
@@ -243,6 +249,8 @@ public class Teleporter extends CustomItem {
         e.setCancelled(true);
         loc.getBlock().setType(Material.AIR);
         teleporterLocations.remove(loc);
+        breakingTeleporters.remove(breaker);
+        breaker.removePotionEffect(PotionEffectType.HASTE);
         
         if (playerTeleporters.containsKey(owner)) {
             playerTeleporters.get(owner).remove(loc);
@@ -254,9 +262,30 @@ public class Teleporter extends CustomItem {
         breaker.getWorld().playSound(loc, Sound.BLOCK_BEACON_DEACTIVATE, 10.0F, 1.0F);
         
         getPlugin().getServer().getScheduler().runTaskLater(getPlugin(), () -> {
-            give(owner, new ItemStack(Material.SPAWNER), 1);
+            give(owner, new ItemStack(TELEPORTER_BLOCK), 1);
             owner.sendMessage(ChatColor.YELLOW + "Your teleporter has been returned to your inventory.");
-        }, 200L);
+        }, TELEPORTER_RETURN_DELAY);
+    }
+
+    @EventHandler
+    public void onTeleporterBlockDamage(BlockDamageEvent e) {
+        Block block = e.getBlock();
+        Location loc = block.getLocation();
+        
+        if (!teleporterLocations.containsKey(loc)) {
+            return;
+        }
+        
+        Player breaker = e.getPlayer();
+        Player owner = teleporterLocations.get(loc);
+        
+        if (getGame().getTeams().onSameTeam(breaker, owner)) {
+            e.setCancelled(true);
+        } else {
+            breakingTeleporters.put(breaker, loc);
+            PotionEffect haste = new PotionEffect(PotionEffectType.HASTE, Integer.MAX_VALUE, TELEPORTER_BREAK_HASTE_LEVEL - 1);
+            breaker.addPotionEffect(haste, true);
+        }
     }
 
     @Override
@@ -265,7 +294,7 @@ public class Teleporter extends CustomItem {
         Block block = e.getClickedBlock();
         Location blockLoc = block.getLocation();
         
-        if (block.getType() == Material.SPAWNER && teleporterLocations.containsKey(blockLoc)) {
+        if (block.getType() == TELEPORTER_BLOCK && teleporterLocations.containsKey(blockLoc)) {
             if (DEBUG) System.out.println("[TELEPORTER DEBUG] onRightClickBlock -> useTeleporter (direct spawner)");
             e.setCancelled(true);
             useTeleporter(e.getPlayer(), blockLoc);
@@ -296,7 +325,7 @@ public class Teleporter extends CustomItem {
         }
         
         Block block = e.getClickedBlock();
-        if (block == null || block.getType() != Material.SPAWNER) {
+        if (block == null || block.getType() != TELEPORTER_BLOCK) {
             if (DEBUG) System.out.println("[TELEPORTER DEBUG] onSpawnerRightClick -> early return (not spawner)");
             return;
         }
@@ -361,6 +390,21 @@ public class Teleporter extends CustomItem {
         if (Commands.isDebugMode()) System.out.println("[TELEPORTER DEBUG] Player " + p.getName() + " disconnected!");
         if (Commands.isDebugMode()) System.out.println("[TELEPORTER DEBUG] Total teleporters on map: " + teleporterLocations.size());
         
+        breakingTeleporters.remove(p);
+        p.removePotionEffect(PotionEffectType.HASTE);
         removeAllTeleporters(p);
+    }
+
+    @Override
+    public void stop() {
+        for (Location loc : teleporterLocations.keySet()) {
+            loc.getBlock().setType(Material.AIR);
+        }
+        teleporterLocations.clear();
+        playerTeleporters.clear();
+        lastPlacementTime.clear();
+        lastTeleportTime.clear();
+        lastActivationTime.clear();
+        breakingTeleporters.clear();
     }
 }

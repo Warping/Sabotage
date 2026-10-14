@@ -8,6 +8,7 @@ import org.bukkit.damage.DamageSource;
 import org.bukkit.damage.DamageType;
 import org.bukkit.entity.Arrow;
 import org.bukkit.entity.Player;
+import org.bukkit.Sound;
 import org.bukkit.event.entity.EntityShootBowEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.entity.ProjectileHitEvent;
@@ -20,8 +21,8 @@ import java.util.List;
 
 public class Rifle extends CustomItem {
     
-    private static final int ARROW_AMMO = 3;
-    private static final long RELOAD_DELAY = 200L;
+    private static final int ARROW_AMMO = 1;
+    private static final long RELOAD_DELAY = 30L;
     private final HashMap<Player, Integer> arrowCount = new HashMap<>();
     private final HashMap<Player, Boolean> reloading = new HashMap<>();
 
@@ -37,7 +38,7 @@ public class Rifle extends CustomItem {
         lore.add(ChatColor.GOLD + "1-10 blocks: 2 hearts");
         lore.add(ChatColor.GOLD + "20-40 blocks: 4 hearts");
         lore.add(ChatColor.GOLD + "50+ blocks: instant kill");
-        lore.add(ChatColor.RED + "3 arrows, 10s reload");
+        lore.add(ChatColor.RED + "1 arrow, 1.5s reload");
         im.lore(Text.of(lore));
 
         im.setUnbreakable(true);
@@ -93,10 +94,12 @@ public class Rifle extends CustomItem {
             damage = 4.0;
         } else if (distance >= 50) {
             damage = 100.0; // Instant kill
-            return;
         } else {
             return;
         }
+
+        //Play hit sound
+        shooter.getWorld().playSound(shooter.getLocation(), Sound.ENTITY_ARROW_HIT_PLAYER, 0.1f, 0.5f);
 
         DamageSource source = DamageSource.builder(DamageType.ARROW)
             .withCausingEntity(shooter) // Explicitly attributes credit for the hit to the shooter

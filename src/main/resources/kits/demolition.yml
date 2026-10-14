@@ -9,6 +9,7 @@ hotbar:
     material: IRON_SWORD
     enchants:
       KNOCKBACK: 2
+      FIRE_ASPECT: 1
   '2':
     custom: landmine
   '3':

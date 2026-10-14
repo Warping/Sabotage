@@ -10,15 +10,13 @@ import bubbles.sabotage.plugin.items.customitem.CustomItem;
 import net.md_5.bungee.api.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.scoreboard.Team;
 
 import java.util.ArrayList;
 
-public class Commands implements CommandExecutor {
+public class Commands {
 	
 	private Game game;
 	private SabTeams teams;
@@ -31,10 +29,10 @@ public class Commands implements CommandExecutor {
 		this.kits = game.getKits();
 	}
 	
-	@Override
-	public boolean onCommand(CommandSender sender, Command cmd, String commandLabel, String[] args) {
+	// Returns false when the command needs a usage message (only /team with no args).
+	public boolean handle(CommandSender sender, String name, String[] args) {
 		Player p = (Player) sender;
-		if (cmd.getName().equals("sab")) {
+		if (name.equals("sab")) {
 			if (args.length==0) {
 				sendHelp(p);
 				return true;
@@ -156,14 +154,14 @@ public class Commands implements CommandExecutor {
 				sendHelp(p);
 				break;
 			}
-		} else if (cmd.getName().equals("team")) {
+		} else if (name.equals("team")) {
 			if (args.length!=0) {
 				joinTeam(args[0], p);
 			} else {
 				return false;
 			}
 		}
-		else if (cmd.getName().equals("kit")) {
+		else if (name.equals("kit")) {
 			if (args.length!=0) {
 				selectKit(args[0], p);
 			} else {
@@ -176,7 +174,7 @@ public class Commands implements CommandExecutor {
 	private void sendHelp(Player p) {
 		p.sendMessage(ChatColor.GOLD + "" + ChatColor.BOLD + "Sabotage Admin Commands:");
 		p.sendMessage(ChatColor.YELLOW + "/sab start" + ChatColor.GRAY + " - Starts the game");
-		p.sendMessage(ChatColor.YELLOW + "/sab stop" + ChatColor.GRAY + " - Stops the game and returns everyone to spectator");
+		p.sendMessage(ChatColor.YELLOW + "/sab stop" + ChatColor.GRAY + " - Stops the game, returns everyone to spectator, and removes all teleporters and landmines");
 		p.sendMessage(ChatColor.YELLOW + "/sab save" + ChatColor.GRAY + " - Saves teams, kits, and bombs to disk");
 		p.sendMessage(ChatColor.YELLOW + "/sab reload" + ChatColor.GRAY + " - Reloads all kits, teams, and bombs from .yml files");
 		p.sendMessage(ChatColor.YELLOW + "/sab balance" + ChatColor.GRAY + " - Toggles automatic team balancing");
@@ -394,6 +392,10 @@ public class Commands implements CommandExecutor {
 		game.setKits(newKits);
 		this.kits = newKits;
 		
+		// Fresh scoreboard so every player's sidebar and team display is rebuilt from scratch
+		Main plugin = game.getPlugin();
+		plugin.resetScoreboard();
+		
 		// Reload teams - unregister old ones and create fresh instance
 		game.getTeams().unregisterAll();
 		Game savedGame = ReadWrite.getSabGame(game.getName());
@@ -416,8 +418,10 @@ public class Commands implements CommandExecutor {
 			game.getBombs().addAll(newBombs);
 		}
 		
-		// Update bomb board
+		// Rebind the bomb board to the fresh scoreboard, then apply it to everyone online
+		BombBoard.setup(game);
 		BombBoard.update();
+		plugin.updateScoreboard();
 		
 		p.sendMessage(ChatColor.GREEN + "Reload complete!");
 		p.sendMessage(ChatColor.GRAY + "Kits: " + kits.getKits().size() + ", Teams: " + teams.getTeams().size() + ", Bombs: " + game.getBombs().size());

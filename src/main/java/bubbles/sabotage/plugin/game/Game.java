@@ -4,6 +4,7 @@ import bubbles.sabotage.plugin.Bomb;
 import bubbles.sabotage.plugin.BombBoard;
 import bubbles.sabotage.plugin.Commands;
 import bubbles.sabotage.plugin.Kit;
+import bubbles.sabotage.plugin.KitIcon;
 import bubbles.sabotage.plugin.Main;
 import bubbles.sabotage.plugin.counter.Counter;
 import bubbles.sabotage.plugin.fileIO.ReadWrite;
@@ -167,12 +168,18 @@ public class Game implements ConfigurationSerializable {
 		p.setExp(0);
 		p.setLevel(0);
 		p.setArrowsInBody(0);
-		Bukkit.getScheduler().runTask(plugin, new Runnable() {
-			@Override
-			public void run() {
-				p.setFireTicks(0);
-			}
-		});		
+		// Bukkit rejects new tasks while the plugin is disabling (stop() runs from onDisable),
+		// so clear fire directly in that case.
+		if (plugin.isEnabled()) {
+			Bukkit.getScheduler().runTask(plugin, new Runnable() {
+				@Override
+				public void run() {
+					p.setFireTicks(0);
+				}
+			});
+		} else {
+			p.setFireTicks(0);
+		}
 	}
 	
 	public void respawn(Player player) {
@@ -240,6 +247,9 @@ public class Game implements ConfigurationSerializable {
 		if (Commands.isDebugMode()) applog.log(LOG_LEVEL, "[DEBUG] spectator: " + player.getName() + " entering spectator mode (active=" + active + ")");
 		clear(player);
 		giveMenuItems(player);
+		if (playerKits.get(player) != null) {
+			KitIcon.place(player, kits.getKit(playerKits.get(player)));
+		}
 		setPlayerStatus(player, false);
 		player.setInvulnerable(true);
 		if (active) {
@@ -440,6 +450,11 @@ public class Game implements ConfigurationSerializable {
 	
 	public void setSelectedKit(Player p, String kit) {
 		this.playerKits.put(p, kit);
+		// Only a spectating player holds the kit selector, so only their icon is shown. A
+		// playing player's icon is set on their next respawn.
+		if (p.isOnline() && !getPlayerStatus(p)) {
+			KitIcon.place(p, kits.getKit(kit));
+		}
 	}
 	
 	public void respawnPlayer(Player p) {

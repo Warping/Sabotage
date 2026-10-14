@@ -166,7 +166,9 @@ public class Bomb implements ConfigurationSerializable {
 	
 	public void explode() {
 		disarmLoc.getBlock().setType(Material.BLACK_WOOL);
-		world.playSound(disarmLoc, Sound.ENTITY_GENERIC_EXPLODE, 0.3F, 0.5F);
+		for (Player p : plugin.getServer().getOnlinePlayers()) {
+			p.playSound(p.getLocation(), Sound.ENTITY_GENERIC_EXPLODE, 0.3F, 0.5F);
+		}
 		if (getOwner()==null) {
 			plugin.getServer().broadcast(Text.of(SabTeams.getDisplayName(armedBy) + " team has blown up a bomb!"));
 		} else {
@@ -243,7 +245,8 @@ public class Bomb implements ConfigurationSerializable {
 		armLoc.getBlock().setType(Material.AIR);
 		disarmLoc.getBlock().setType(Material.TNT);
 		for (Player p : plugin.getServer().getOnlinePlayers()) {
-			plugin.getServer().getWorld("world").playSound(p.getLocation(), Sound.ENTITY_BLAZE_DEATH, (float) 0.3, (float) .5);
+			p.playSound(p.getLocation(), Sound.ENTITY_BLAZE_DEATH, (float) 10.F, (float) .5);
+			p.sendMessage(Text.of(SabTeams.getDisplayName(armedBy) + " team armed a bomb!"));
 		}
 		if (this.owner == null) {
 			countDown(armedBy);
@@ -363,11 +366,14 @@ public class Bomb implements ConfigurationSerializable {
 		teamStatus.put(team, val);
 		
 		if (!armingBars.containsKey(player)) {
-			BossBar bar = plugin.getServer().createBossBar("Arming Bomb", BarColor.YELLOW, BarStyle.SOLID);
+			BossBar bar = plugin.getServer().createBossBar("Arming Bomb", BarColor.RED, BarStyle.SOLID);
 			armingBars.put(player, bar);
-			bar.addPlayer(player);
 		}
-		armingBars.get(player).setProgress(teamStatus.get(team));
+		BossBar armingBar = armingBars.get(player);
+		armingBar.setProgress(teamStatus.get(team));
+		if (!armingBar.getPlayers().contains(player)) {
+			armingBar.addPlayer(player);
+		}
 		
 		if (teamStatus.get(team)>=1.0) {
 			armBomb(team);

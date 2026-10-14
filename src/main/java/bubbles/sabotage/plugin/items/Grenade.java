@@ -27,13 +27,13 @@ import java.util.List;
 import java.util.logging.Level;
 
 public class Grenade extends CustomItem {
-    private final float SLOW_THROW = 0.45F;
-    private final float FAST_THROW = 0.95F;
-    private final float POWER = 10.0F;
-    private final float RADIUS = 7.0F;
-    private final long FUSE_DELAY = 100L;
-    private final int MAX_NADES = 4;
-    private static final long RELOAD_DELAY = 110L;
+    private final float SLOW_THROW = 0.65F;
+    private final float FAST_THROW = 1.10F;
+    private final float POWER = 15.0F;
+    private final float RADIUS = 8.0F;
+    private final long FUSE_DELAY = 75L;
+    private final int MAX_NADES = 5;
+    private static final long RELOAD_DELAY = 80L;
     private final boolean DEBUG = false;
     private final HashMap<Player, Boolean> reloading = new HashMap<>();
     private final Material AMMO_TYPE = Material.FIREWORK_STAR;

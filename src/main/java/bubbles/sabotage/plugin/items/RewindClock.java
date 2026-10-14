@@ -15,7 +15,7 @@ import java.util.*;
 public class RewindClock extends CustomItem {
 
     private final HashMap<Player, Queue<Location>> recentPos = new HashMap<>();
-    private final int MAX_REWIND_TIME = 12;
+    private final int MAX_REWIND_TIME = 20;
 
     public RewindClock() {
         super();

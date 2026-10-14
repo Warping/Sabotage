@@ -11,10 +11,10 @@ hotbar:
     custom: healing
   '3':
     material: GOLDEN_APPLE
-    amount: 10
+    amount: 5
   '4':
     custom: steak
-    amount: 5
+    amount: 2
 armor:
   boots: GOLDEN_BOOTS
   leggings: GOLDEN_LEGGINGS

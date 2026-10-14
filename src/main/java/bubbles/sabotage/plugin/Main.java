@@ -5,6 +5,9 @@ import bubbles.sabotage.plugin.game.Game;
 import bubbles.sabotage.plugin.groups.SabKits;
 import bubbles.sabotage.plugin.items.*;
 import bubbles.sabotage.plugin.items.customitem.CustomItem;
+import bubbles.sabotage.plugin.listeners.KitIconListener;
+import io.papermc.paper.command.brigadier.BasicCommand;
+import io.papermc.paper.command.brigadier.CommandSourceStack;
 import org.bukkit.configuration.serialization.ConfigurationSerialization;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -35,20 +38,42 @@ public class Main extends JavaPlugin {
 		
 		load("Sab");
 		loadCustomItems();
+		getServer().getPluginManager().registerEvents(new KitIconListener(), this);
 		loadKits("Sab");
 		game.setup();
 
 		cmds = new Commands(game);
-		getCommand("sab").setExecutor(cmds);
-		getCommand("team").setExecutor(cmds);
-		getCommand("kit").setExecutor(cmds);
+		registerSabCommand("sab", "Controls various sabotage gamemode functions.", "sabotage.sab", "/sab [start/stop/save/balance/edit/item/team/kit/bomb/help]");
+		registerSabCommand("team", "Changes Team", null, "/team [color]");
+		registerSabCommand("kit", "Changes Kit", null, "/kit [kitname]");
 		applog.log(LOG_LEVEL,"Commands Loaded!");
 		
 	}
 	
 	@Override
 	public void onDisable() {
-		game.getTeams().unregisterAll();
+		if (game != null) {
+			game.stop();
+			game.getTeams().unregisterAll();
+		}
+	}
+
+	// Paper plugins can't declare commands in paper-plugin.yml or use getCommand(), so each
+	// command is registered in code and forwarded to Commands#handle.
+	private void registerSabCommand(String name, String description, String permission, String usage) {
+		registerCommand(name, description, new BasicCommand() {
+			@Override
+			public void execute(CommandSourceStack stack, String[] args) {
+				if (!cmds.handle(stack.getSender(), name, args)) {
+					stack.getSender().sendMessage("Usage: " + usage);
+				}
+			}
+
+			@Override
+			public String permission() {
+				return permission;
+			}
+		});
 	}
 	
 	private void loadCustomItems() {
@@ -149,6 +174,12 @@ public class Main extends JavaPlugin {
 		for (Player p : getServer().getOnlinePlayers()) {
 			p.setScoreboard(board);
 		}
+	}
+
+	// Replaces the shared scoreboard with a fresh one. Anything that cached the old board
+	// (teams, bomb board) must be rebuilt against it, then updateScoreboard() applies it.
+	public void resetScoreboard() {
+		board = getServer().getScoreboardManager().getNewScoreboard();
 	}
 
 	public Game getGame() {

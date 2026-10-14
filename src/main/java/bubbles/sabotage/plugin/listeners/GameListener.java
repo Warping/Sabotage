@@ -5,17 +5,22 @@ import bubbles.sabotage.plugin.game.Game;
 import bubbles.sabotage.plugin.items.customitem.CustomItem;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.Tag;
+import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.Arrow;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.block.TNTPrimeEvent;
 import org.bukkit.event.entity.*;
 import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
+import org.bukkit.event.inventory.InventoryOpenEvent;
 import org.bukkit.event.player.*;
 import org.bukkit.inventory.ItemStack;
 
@@ -125,6 +130,7 @@ public class GameListener implements Listener {
 		if (Commands.isDebugMode()) applog.log(Level.INFO, "[DEBUG] onDeath: " + player.getName() + " died (active=" + game.isActive() + ")");
 		e.getDrops().clear();
 		game.recordDeathLocation(player);
+
 		// Deliberately NOT touching the player's health/inventory/flags here (that used to
 		// happen via game.spectator() at this point): the player is still showing the vanilla
 		// death screen at this moment (not yet "alive" again from the engine's perspective), and
@@ -148,8 +154,12 @@ public class GameListener implements Listener {
 		if (deathLoc != null) {
 			e.setRespawnLocation(deathLoc);
 		}
+		// Check if y coord is in void
+		if (deathLoc != null && deathLoc.getY() < 0) {
+			e.setRespawnLocation(game.getWorld().getSpawnLocation());
+		}
 		if (game.isActive()) {
-			game.deathCounter(player, 8);
+			game.deathCounter(player, 10);
 		}
 	}
 	
@@ -222,6 +232,39 @@ public class GameListener implements Listener {
 	public void onItemDamage(PlayerItemDamageEvent e) {
 		e.setCancelled(true);
 	}
+
+	@EventHandler(priority = EventPriority.HIGH)
+	public void onStorageInteract(PlayerInteractEvent e) {
+		if (e.getAction() != Action.RIGHT_CLICK_BLOCK || e.getClickedBlock() == null) {
+			return;
+		}
+		if (!isEditing(e.getPlayer()) && isStorage(e.getClickedBlock().getType())) {
+			e.setCancelled(true);
+		}
+	}
+
+	// Backstop so storage can't be opened by any other path (e.g. a chest already targeted by another action).
+	@EventHandler(priority = EventPriority.HIGH)
+	public void onStorageOpen(InventoryOpenEvent e) {
+		if (!(e.getPlayer() instanceof Player)) {
+			return;
+		}
+		Location loc = e.getInventory().getLocation();
+		if (loc == null || isEditing((Player) e.getPlayer())) {
+			return;
+		}
+		if (isStorage(loc.getBlock().getType())) {
+			e.setCancelled(true);
+		}
+	}
+
+	private boolean isStorage(Material type) {
+		return type == Material.CHEST
+				|| type == Material.TRAPPED_CHEST
+				|| type == Material.ENDER_CHEST
+				|| type == Material.BARREL
+				|| Tag.SHULKER_BOXES.isTagged(type);
+	}
 	
 	@EventHandler
 	public void onHunger(FoodLevelChangeEvent e) {
@@ -233,6 +276,13 @@ public class GameListener implements Listener {
 	public void onAttack(EntityDamageByEntityEvent e) {
 		if (e.getDamager().getType()==EntityType.PLAYER) {
 			Player player = (Player) e.getDamager();
+			// Armor stands are only breakable by edit mode players before the round starts.
+			if (e.getEntity() instanceof ArmorStand) {
+				if (game.isActive() || !isEditing(player)) {
+					e.setCancelled(true);
+				}
+				return;
+			}
 			if (!game.getPlayerStatus(player)) {
 				e.setCancelled(true);
 			}
@@ -250,6 +300,17 @@ public class GameListener implements Listener {
 	@EventHandler
 	public void onIgnite(TNTPrimeEvent e) {
 		e.setCancelled(true);
+	}
+
+	@EventHandler
+	public void onArmorStandInteract(org.bukkit.event.player.PlayerInteractAtEntityEvent e) {
+		if (e.getRightClicked() instanceof org.bukkit.entity.ArmorStand) {
+			Player player = e.getPlayer();
+			// Only allow armor stand interaction if player is in edit mode
+			if (!game.getPlugin().getEditMode().isEditing(player)) {
+				e.setCancelled(true);
+			}
+		}
 	}
 
 	private boolean isEditing(Player player) {

@@ -18,7 +18,7 @@ import java.util.logging.Level;
 public class Warper extends CustomItem {
 
 	private final HashMap<Player, Queue<Location>> recentPos = new HashMap<>();
-	private final int MAX_WARP_TIME = 12;
+	private final int MAX_WARP_TIME = 15;
 
 	public Warper() {
 		super();

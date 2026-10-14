@@ -1,5 +1,6 @@
 package bubbles.sabotage.plugin;
 
+import io.papermc.paper.scoreboard.numbers.NumberFormat;
 import org.bukkit.scoreboard.Criteria;
 import org.bukkit.scoreboard.DisplaySlot;
 import org.bukkit.scoreboard.Objective;
@@ -38,6 +39,7 @@ public class BombBoard {
 		objBomb.unregister();
 		objBomb = board.registerNewObjective("bombboard", Criteria.DUMMY, Text.of(boardName));
 		objBomb.setDisplaySlot(DisplaySlot.SIDEBAR);
+		objBomb.numberFormat(NumberFormat.blank());
 		int bomb_index = 1;
 		String tag;
 		tag = ChatColor.RED + "" + ChatColor.BOLD + "=================";
@@ -138,6 +140,7 @@ public class BombBoard {
 	}
 	
 	public static void update() {
+		count.cancel();
 		count = new Counter(10L) {
 			public void run() {
 				display();

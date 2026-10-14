@@ -184,4 +184,18 @@ public class BarbedSlasher extends CustomItem {
 			e.setCancelled(true);
 		}
 	}
+
+	@Override
+	protected void onDeath(org.bukkit.event.entity.PlayerDeathEvent e) {
+		Player victim = e.getEntity();
+		UUID victimId = victim.getUniqueId();
+		
+		// Clean up bleed effect if victim was bleeding
+		if (bleedingPlayers.containsKey(victimId)) {
+			BleedTracker tracker = bleedingPlayers.get(victimId);
+			tracker.task.cancel();
+			bleedingPlayers.remove(victimId);
+			if (Commands.isDebugMode()) applog.log(Level.INFO, "[DEBUG] Barbed Slasher: Cleaned up bleed effect for deceased player " + victim.getName());
+		}
+	}
 }

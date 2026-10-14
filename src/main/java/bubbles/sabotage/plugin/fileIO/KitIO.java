@@ -4,6 +4,7 @@ import bubbles.sabotage.plugin.Kit;
 import bubbles.sabotage.plugin.Main;
 import bubbles.sabotage.plugin.groups.SabKits;
 import bubbles.sabotage.plugin.items.customitem.CustomItem;
+import org.bukkit.Color;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Registry;
@@ -12,6 +13,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.LeatherArmorMeta;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
@@ -46,6 +48,7 @@ public final class KitIO {
 
 	private static final String ARMOR_SLOT_NAMES_RESOURCE_PREFIX = "kits/";
 	private static final String[] ARMOR_SLOT_NAMES = {"boots", "leggings", "chestplate", "helmet"};
+	private static final Color LEATHER_DEFAULT_COLOR = Color.fromRGB(0xA06540);
 
 	private KitIO() {}
 
@@ -264,10 +267,29 @@ public final class KitIO {
 			metaChanged = true;
 		}
 
+		Object colorRaw = map.get("color");
+		if (colorRaw != null && meta instanceof LeatherArmorMeta) {
+			Color color = parseHexColor(colorRaw.toString());
+			if (color != null) {
+				((LeatherArmorMeta) meta).setColor(color);
+				metaChanged = true;
+			} else {
+				applog.log(Level.WARNING, "Invalid leather armor color (expected #RRGGBB): " + colorRaw);
+			}
+		}
+
 		if (metaChanged) {
 			item.setItemMeta(meta);
 		}
 		return item;
+	}
+
+	private static Color parseHexColor(String hex) {
+		String digits = hex.startsWith("#") ? hex.substring(1) : hex;
+		if (!digits.matches("[0-9a-fA-F]{6}")) {
+			return null;
+		}
+		return Color.fromRGB(Integer.parseInt(digits, 16));
 	}
 
 	/**
@@ -384,6 +406,7 @@ public final class KitIO {
 		Map<String, Object> enchantMap = null;
 		boolean unbreakable = false;
 		String potionType = null;
+		String colorHex = null;
 		if (item.hasItemMeta()) {
 			ItemMeta meta = item.getItemMeta();
 			if (meta.hasEnchants()) {
@@ -399,9 +422,15 @@ public final class KitIO {
 					potionType = type.name();
 				}
 			}
+			if (meta instanceof LeatherArmorMeta) {
+				Color color = ((LeatherArmorMeta) meta).getColor();
+				if (!color.equals(LEATHER_DEFAULT_COLOR)) {
+					colorHex = String.format("#%06X", color.asRGB());
+				}
+			}
 		}
 
-		if (enchantMap == null && !unbreakable && potionType == null && item.getAmount() == 1) {
+		if (enchantMap == null && !unbreakable && potionType == null && colorHex == null && item.getAmount() == 1) {
 			return item.getType().name();
 		}
 
@@ -412,6 +441,9 @@ public final class KitIO {
 		}
 		if (potionType != null) {
 			spec.put("potion_type", potionType);
+		}
+		if (colorHex != null) {
+			spec.put("color", colorHex);
 		}
 		if (enchantMap != null && !enchantMap.isEmpty()) {
 			spec.put("enchants", enchantMap);

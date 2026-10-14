@@ -1,4 +1,4 @@
-name: bleeder
+name: hemophiliac
 price: 3
 icon: NETHER_WART
 description:
@@ -8,8 +8,12 @@ hotbar:
   '1':
     custom: barbed
 armor:
-  boots: IRON_BOOTS
+  boots:
+    material: LEATHER_BOOTS
+    color: '#FF0000'
   leggings: IRON_LEGGINGS
   chestplate: IRON_CHESTPLATE
-  helmet: IRON_HELMET
+  helmet:
+    material: LEATHER_HELMET
+    color: '#FF0000'
 potionEffects: []
