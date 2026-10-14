@@ -3,6 +3,7 @@ package bubbles.sabotage.plugin.listeners;
 import bubbles.sabotage.plugin.Commands;
 import bubbles.sabotage.plugin.game.Game;
 import bubbles.sabotage.plugin.items.customitem.CustomItem;
+import org.bukkit.ChatColor;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -23,8 +24,10 @@ import org.bukkit.event.entity.EntityDamageEvent.DamageCause;
 import org.bukkit.event.inventory.InventoryOpenEvent;
 import org.bukkit.event.player.*;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.scoreboard.Team;
 
 import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.logging.Level;
 
 import static bubbles.sabotage.plugin.Main.applog;
@@ -137,6 +140,86 @@ public class GameListener implements Listener {
 		// resetting their living stats on a dead entity appears to be what was freezing the
 		// client's own Respawn button. All of that is now deferred to onRespawn() below, which
 		// only runs once the engine has actually finished the dead-to-alive transition.
+	}
+
+	private static final String[] CUSTOM_DEATH_MESSAGES = {
+		"victim got cucked by attacker",
+		"victim was destroyed by attacker 's huge dong",
+		"victim 's corpse now sits above attacker 's fireplace",
+		"victim 's dead body was violated by attacker",
+		"victim was turned into a fine paste by attacker",
+		"victim was turned into giblets by attacker",
+		"victim was rekt by attacker",
+		"victim became attacker 's simp"
+	};
+
+	private static final String[] SHOT_DEATH_MESSAGES = {
+		"victim was penetrated by attacker's sharp poker",
+		"victim was mowed down by attacker"
+	};
+
+	private static final String[] EXPLOSION_DEATH_MESSAGES = {
+		"victim blew up from attacker's massive bomb",
+		"victim sexploded by attacker"
+	};
+
+	private static final String[] NO_KILLER_DEATH_MESSAGES = {
+		"victim slipped on cum and died",
+		"victim bonked head",
+		"victim spontaneously combusted",
+		"victim died of fall uwu"
+	};
+
+	@EventHandler
+	public void onCustomDeathMessage(PlayerDeathEvent e) {
+		if (!game.isActive()) {
+			return;
+		}
+		Player victim = e.getEntity();
+		Player attacker = victim.getKiller();
+		if (attacker == null) {
+			e.setDeathMessage(ChatColor.YELLOW + formatDeathMessage(pick(NO_KILLER_DEATH_MESSAGES), victim, null));
+			return;
+		}
+		// Self-kills are left to the item handlers (e.g. Grenade's own-grenade message).
+		if (attacker.equals(victim)) {
+			return;
+		}
+		e.setDeathMessage(ChatColor.YELLOW + formatDeathMessage(pick(poolForCause(victim)), victim, attacker));
+	}
+
+	private String[] poolForCause(Player victim) {
+		EntityDamageEvent lastDamage = victim.getLastDamageCause();
+		if (lastDamage == null) {
+			return CUSTOM_DEATH_MESSAGES;
+		}
+		switch (lastDamage.getCause()) {
+			case PROJECTILE:
+				return SHOT_DEATH_MESSAGES;
+			case ENTITY_EXPLOSION:
+			case BLOCK_EXPLOSION:
+				return EXPLOSION_DEATH_MESSAGES;
+			default:
+				return CUSTOM_DEATH_MESSAGES;
+		}
+	}
+
+	private static String pick(String[] messages) {
+		return messages[ThreadLocalRandom.current().nextInt(messages.length)];
+	}
+
+	private String formatDeathMessage(String template, Player victim, Player attacker) {
+		String message = template.replace("victim", coloredName(victim) + ChatColor.YELLOW);
+		if (attacker != null) {
+			message = message.replace("attacker", coloredName(attacker) + ChatColor.YELLOW);
+		}
+		return message;
+	}
+
+	private String coloredName(Player player) {
+		Team team = game.getTeams().getTeamOfPlayer(player);
+		ChatColor color = (team != null && team.getColor() != null) ? team.getColor() : ChatColor.WHITE;
+		return color + player.getName();
 	}
 
 	@EventHandler
