@@ -12,12 +12,17 @@ import bubbles.sabotage.plugin.groups.SabKits;
 import bubbles.sabotage.plugin.groups.SabTeams;
 import bubbles.sabotage.plugin.items.customitem.CustomItem;
 import bubbles.sabotage.plugin.listeners.GameListener;
+import bubbles.sabotage.plugin.util.Text;
 import net.md_5.bungee.api.ChatColor;
 import org.bukkit.*;
 import org.bukkit.configuration.serialization.ConfigurationSerializable;
 import org.bukkit.configuration.serialization.SerializableAs;
 import org.bukkit.entity.Player;
 import org.bukkit.potion.PotionEffect;
+import org.bukkit.scoreboard.Criteria;
+import org.bukkit.scoreboard.DisplaySlot;
+import org.bukkit.scoreboard.Objective;
+import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
 
 import java.util.*;
@@ -36,6 +41,7 @@ public class Game implements ConfigurationSerializable {
 	private HashMap<Player, Boolean> playerStatus = new HashMap<Player, Boolean>();
 	private HashMap<Player, Counter> deathCounters = new HashMap<Player, Counter>(); //Pending respawn timers, so stop() can cancel them
 	private HashMap<Player, Location> deathLocations = new HashMap<Player, Location>(); //Store player death locations
+	private HashMap<Player, Integer> kills = new HashMap<Player, Integer>(); //Kills since each player's last death
 	private ArrayList<Bomb> bombs = new ArrayList<Bomb>(); //Bombs in game
 	private ArrayList<String> teamNames = new ArrayList<String>(); //Team names
 	private SabTeams teams = new SabTeams(); //Teams available
@@ -47,7 +53,10 @@ public class Game implements ConfigurationSerializable {
 	private GameListener listen;
 
 	private final Level LOG_LEVEL = Level.INFO;
-	
+
+	private static final int KILLS_PER_FLARE = 4;
+	private static final String KILL_OBJECTIVE = "kills";
+
 	public Game(String name, String world) {
 		
 		this.name = name;
@@ -123,6 +132,9 @@ public class Game implements ConfigurationSerializable {
 		if (autoBalance) {
 			teamBalance();
 		}
+		kills.clear();
+		showKillTablist();
+		plugin.updateScoreboard();
 		for (Player p : plugin.getServer().getOnlinePlayers()) {
 			respawn(p);
 			teleportToTeamSpawn(p);
@@ -139,9 +151,15 @@ public class Game implements ConfigurationSerializable {
 			counter.cancel();
 		}
 		deathCounters.clear();
+		kills.clear();
+		hideKillTablist();
+		Location worldSpawn = world != null ? world.getSpawnLocation() : null;
 		for (Player p : plugin.getServer().getOnlinePlayers()) {
 			spectator(p);
 			showPlayer(p);
+			if (worldSpawn != null) {
+				p.teleport(worldSpawn);
+			}
 		}
 		for (Bomb bomb : bombs) {
 			bomb.reset();
@@ -154,7 +172,85 @@ public class Game implements ConfigurationSerializable {
 		applog.log(LOG_LEVEL,ChatColor.GREEN + "Sabotage has ended!");
 		
 	}
+
+	// Called by a bomb right after it explodes. Ends the game once every bomb has exploded.
+	public void onBombExploded() {
+		if (!active) {
+			return;
+		}
+		HashMap<Team, Integer> explosions = new HashMap<Team, Integer>();
+		for (Bomb bomb : bombs) {
+			if (!bomb.isExploded()) {
+				return;
+			}
+			explosions.merge(bomb.getExplodedBy(), 1, Integer::sum);
+		}
+		explosions.remove(null);
+		int most = Collections.max(explosions.values());
+		List<Team> leaders = new ArrayList<Team>();
+		for (Map.Entry<Team, Integer> entry : explosions.entrySet()) {
+			if (entry.getValue() == most) {
+				leaders.add(entry.getKey());
+			}
+		}
+		if (leaders.size() == 1) {
+			plugin.getServer().broadcast(Text.of(SabTeams.getDisplayName(leaders.get(0)) + ChatColor.GOLD + " team won with " + most + " exploded bombs!"));
+		} else {
+			StringBuilder names = new StringBuilder();
+			for (Team team : leaders) {
+				if (names.length() > 0) {
+					names.append(ChatColor.GOLD).append(", ");
+				}
+				names.append(SabTeams.getDisplayName(team));
+			}
+			plugin.getServer().broadcast(Text.of(ChatColor.GOLD + "It's a tie between " + names + ChatColor.GOLD + " with " + most + " exploded bombs each!"));
+		}
+		plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+			if (active) {
+				stop();
+			}
+		}, 100L);
+	}
 	
+	// Shows each player's kills since their last death in the tablist (player list slot).
+	public void showKillTablist() {
+		Scoreboard board = plugin.getScoreboard();
+		hideKillTablist();
+		Objective objective = board.registerNewObjective(KILL_OBJECTIVE, Criteria.DUMMY, Text.of(ChatColor.RED + "Kills"));
+		objective.setDisplaySlot(DisplaySlot.PLAYER_LIST);
+		for (Player p : plugin.getServer().getOnlinePlayers()) {
+			updateKillTablist(p);
+		}
+	}
+
+	public void hideKillTablist() {
+		Objective objective = plugin.getScoreboard().getObjective(KILL_OBJECTIVE);
+		if (objective != null) {
+			objective.unregister();
+		}
+	}
+
+	public void updateKillTablist(Player player) {
+		Objective objective = plugin.getScoreboard().getObjective(KILL_OBJECTIVE);
+		if (objective != null) {
+			objective.getScore(player.getName()).setScore(kills.getOrDefault(player, 0));
+		}
+	}
+
+	public void recordKill(Player attacker) {
+		int count = kills.merge(attacker, 1, Integer::sum);
+		updateKillTablist(attacker);
+		if (count % KILLS_PER_FLARE == 0) {
+			plugin.getItems().get("flare").give(attacker, 1);
+			attacker.sendMessage(ChatColor.GOLD + "Killstreak! " + count + " kills this life - you earned a Flare!");
+		}
+	}
+
+	public void resetKills(Player player) {
+		kills.remove(player);
+		updateKillTablist(player);
+	}
+
 	public void clear(Player p) {
 		p.getInventory().clear();
 		p.updateInventory();

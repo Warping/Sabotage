@@ -33,6 +33,7 @@ public class Bomb implements ConfigurationSerializable {
 	private String _owner; //Owner passed as String for Serialization
 	private Team owner; //Owner of bomb (null means anyone can arm and disarm)
 	private Team armedBy; // Team which armed the bomb
+	private Team explodedBy; // Team which armed the bomb when it exploded
 	private Location armLoc; //Location where bomb shall be armed
 	private Location disarmLoc; //Location of where bomb shall be disarmed
 	private World world;
@@ -156,6 +157,7 @@ public class Bomb implements ConfigurationSerializable {
 		isCooldown = false;
 		isArmed = false;
 		isExploded = false;
+		explodedBy = null;
 		armingBars.values().forEach(BossBar::removeAll);
 		armingBars.clear();
 		if (disarmingBar != null) {
@@ -174,7 +176,9 @@ public class Bomb implements ConfigurationSerializable {
 		} else {
 			plugin.getServer().broadcast(Text.of(SabTeams.getDisplayName(armedBy) + " team has blown up a " + SabTeams.getDisplayName(getOwner()) + " bomb!"));
 		}
+		explodedBy = armedBy;
 		isExploded = true;
+		plugin.getGame().onBombExploded();
 	}
 	
 	public void resetArmStatusAll() {
@@ -197,6 +201,10 @@ public class Bomb implements ConfigurationSerializable {
 
 	public boolean isExploded() {
 		return isExploded;
+	}
+
+	public Team getExplodedBy() {
+		return explodedBy;
 	}
 
 	public SabTeams getSabTeams() {

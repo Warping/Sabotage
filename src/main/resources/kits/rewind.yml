@@ -3,7 +3,7 @@ price: 3
 icon: CLOCK
 description:
 - Carries the Rewind Clock to teleport back to an earlier position.
-- A spare helmet in the hotbar backs up your worn armor.
+- Great for quick escapes and repositioning during combat.
 hotbar:
   '1': IRON_SWORD
   '2':

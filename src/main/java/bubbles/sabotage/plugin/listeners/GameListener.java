@@ -107,6 +107,7 @@ public class GameListener implements Listener {
 			}
 		}
 		game.getPlugin().updateScoreboard();
+		game.updateKillTablist(player);
 
 		// Game.hidePlayer()/showPlayer() only update visibility for players who were already
 		// online at the time they were called, so a player hidden (e.g. a spectator during an
@@ -133,6 +134,12 @@ public class GameListener implements Listener {
 		if (Commands.isDebugMode()) applog.log(Level.INFO, "[DEBUG] onDeath: " + player.getName() + " died (active=" + game.isActive() + ")");
 		e.getDrops().clear();
 		game.recordDeathLocation(player);
+
+		Player killer = player.getKiller();
+		if (game.isActive() && killer != null && !killer.equals(player) && game.getPlayerStatus(killer)) {
+			game.recordKill(killer);
+		}
+		game.resetKills(player);
 
 		// Deliberately NOT touching the player's health/inventory/flags here (that used to
 		// happen via game.spectator() at this point): the player is still showing the vanilla
@@ -241,6 +248,10 @@ public class GameListener implements Listener {
 		if (deathLoc != null && deathLoc.getY() < 0) {
 			e.setRespawnLocation(game.getWorld().getSpawnLocation());
 		}
+		// A player who dies and respawns after the game has stopped goes to world spawn.
+		if (!game.isActive()) {
+			e.setRespawnLocation(game.getWorld().getSpawnLocation());
+		}
 		if (game.isActive()) {
 			game.deathCounter(player, 10);
 		}
@@ -250,7 +261,9 @@ public class GameListener implements Listener {
 	public void onVoid(EntityDamageEvent e) {
 		if (e.getCause()==DamageCause.VOID && e.getEntity() instanceof Player) {
 			Player p = (Player) e.getEntity();
-			p.setHealth(0);
+			// Make the void hit lethal through the damage event instead of calling setHealth(0):
+			// setHealth(0) inside this event makes Paper fire PlayerDeathEvent twice.
+			e.setDamage(1000.0);
 			p.teleport(game.getWorld().getSpawnLocation());
 		}
 	}

@@ -421,6 +421,9 @@ public class Commands {
 		// Rebind the bomb board to the fresh scoreboard, then apply it to everyone online
 		BombBoard.setup(game);
 		BombBoard.update();
+		if (game.isActive()) {
+			game.showKillTablist();
+		}
 		plugin.updateScoreboard();
 		
 		p.sendMessage(ChatColor.GREEN + "Reload complete!");
